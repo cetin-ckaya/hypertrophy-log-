@@ -126,7 +126,7 @@ const initialState = (): State => ({
   foods: clone(DEFAULT_FOODS),
   plan: clone(DEFAULT_PLAN),
   calorieTarget: 3300,
-  macroTargets: { protein: 195, carbs: 430, fat: 83 },
+  macroTargets: { protein: 165, carbs: 488, fat: 72 },
   targetHistory: [{ date: todayKey(), kcal: 3300 }],
   dayLogs: {},
   weights: {},
@@ -143,7 +143,13 @@ export const dayLogFor = (state: State, date: string): DayLog => {
   return {
     date,
     isTraining,
-    meals: buildDayMeals(state.plan, isTraining, state.settings.restDayCarbReduction),
+    meals: buildDayMeals(
+      state.plan,
+      isTraining,
+      state.settings.restDayCarbReduction,
+      state.foods,
+      state.settings.proteinFloor
+    ),
   };
 };
 
@@ -264,7 +270,13 @@ export const useStore = create<Store>()(
       setDayTraining: (date, isTraining) =>
         set((s) => {
           const log = dayLogFor(s, date);
-          const rebuilt = buildDayMeals(s.plan, isTraining, s.settings.restDayCarbReduction);
+          const rebuilt = buildDayMeals(
+            s.plan,
+            isTraining,
+            s.settings.restDayCarbReduction,
+            s.foods,
+            s.settings.proteinFloor
+          );
           return {
             dayLogs: {
               ...s.dayLogs,
@@ -358,7 +370,13 @@ export const useStore = create<Store>()(
               ...s.dayLogs,
               [date]: {
                 ...log,
-                meals: buildDayMeals(s.plan, log.isTraining, s.settings.restDayCarbReduction),
+                meals: buildDayMeals(
+                  s.plan,
+                  log.isTraining,
+                  s.settings.restDayCarbReduction,
+                  s.foods,
+                  s.settings.proteinFloor
+                ),
               },
             },
           };
@@ -580,18 +598,18 @@ export const useStore = create<Store>()(
     }),
     {
       name: 'hipertrofi-store-v1',
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => AsyncStorage),
       /**
-       * v2: öğün planı ~3.300 kcal'a çıkarıldı ve makro hedefleri planın gerçek
-       * değerlerine oturtuldu. Kullanıcı beslenme tarafına hiç dokunmadıysa
+       * v3: öğün planı protein 165 g / yağ 72 g hedefine göre yeniden kuruldu,
+       * kalan kalori pirinçten tamamlandı. Kullanıcı beslenme tarafına hiç dokunmadıysa
        * (günlük kaydı ve kalori ayarı yoksa) yeni varsayılanlar uygulanır;
        * dokunduysa mevcut planı bozmamak için olduğu gibi bırakılır.
        */
       migrate: (persisted, version) => {
         const state = persisted as Partial<State> | undefined;
         if (!state) return persisted as Store;
-        if (version < 2) {
+        if (version < 3) {
           const untouched =
             Object.keys(state.dayLogs ?? {}).length === 0 &&
             (state.adjustments ?? []).length === 0;

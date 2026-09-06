@@ -134,7 +134,8 @@ export const NutritionScreen = () => {
           </Row>
           <Text style={font.tiny}>
             Dinlenme gününde 1. öğün dışındaki öğünlerin pirinci{' '}
-            {state.settings.restDayCarbReduction} g düşürülür.
+            {state.settings.restDayCarbReduction} g düşürülür; protein{' '}
+            {state.settings.proteinFloor} g'ın altına inerse tavuk gramajı dengelenir.
           </Text>
           <Button
             title="Günü plandan sıfırla"

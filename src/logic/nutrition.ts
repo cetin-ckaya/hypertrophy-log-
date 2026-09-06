@@ -52,19 +52,6 @@ export const applyRestDay = (meals: Meal[], reduction: number): Meal[] =>
     };
   });
 
-export const buildDayMeals = (
-  plan: Meal[],
-  isTraining: boolean,
-  reduction: number
-): DayMeal[] => {
-  const base = isTraining ? plan : applyRestDay(plan, reduction);
-  return base.map((m) => ({
-    ...m,
-    items: m.items.map((i) => ({ ...i })),
-    eaten: false,
-  }));
-};
-
 /** Kalori değişimini karbonhidrat (pirinç) gramajına çevirir: 1 g pirinç ≈ 3,6 kcal. */
 export const kcalToCarbGrams = (kcalDelta: number, foods: Record<string, Food>): number => {
   const food = foods[CARB_SOURCE_ID];
@@ -116,7 +103,7 @@ export const enforceProteinFloor = (
 ): Meal[] => {
   let current = meals;
   let guard = 0;
-  while (planMacros(current, foods).protein < floor && guard < 40) {
+  while (planMacros(current, foods).protein < floor && guard < 80) {
     const targets = current
       .map((m, i) => (m.items.some((it) => it.foodId === PROTEIN_SOURCE_ID) ? i : -1))
       .filter((i) => i >= 0);
@@ -127,7 +114,7 @@ export const enforceProteinFloor = (
         ? {
             ...meal,
             items: meal.items.map((i) =>
-              i.foodId === PROTEIN_SOURCE_ID ? { ...i, amount: i.amount + 10 } : i
+              i.foodId === PROTEIN_SOURCE_ID ? { ...i, amount: i.amount + 5 } : i
             ),
           }
         : meal
@@ -135,6 +122,27 @@ export const enforceProteinFloor = (
     guard += 1;
   }
   return current;
+};
+
+/**
+ * Bir günün öğünlerini plandan türetir. Dinlenme gününde karbonhidrat düşer;
+ * bu yüzden protein tabanının altına inilirse tavuk gramajı dengelenir.
+ */
+export const buildDayMeals = (
+  plan: Meal[],
+  isTraining: boolean,
+  reduction: number,
+  foods: Record<string, Food>,
+  proteinFloor: number
+): DayMeal[] => {
+  const base = isTraining
+    ? plan
+    : enforceProteinFloor(applyRestDay(plan, reduction), foods, proteinFloor);
+  return base.map((m) => ({
+    ...m,
+    items: m.items.map((i) => ({ ...i })),
+    eaten: false,
+  }));
 };
 
 export const diffPlans = (before: Meal[], after: Meal[]): PlanDiff[] => {

@@ -36,39 +36,38 @@ export const DEFAULT_FOODS: Record<string, Food> = Object.fromEntries(
 );
 
 /**
- * Antrenman günü varsayılan planı — toplam ~3.300 kcal.
- * Gramajlar, tablodaki toplamlara gerçekten ulaşacak şekilde ayarlandı;
- * protein kaynakları (tavuk 180/165 g) korundu, fark karbonhidrattan kapatıldı.
- * Dinlenme gününde 2. ve 3. öğünün pirinci otomatik düşer (~2.850 kcal).
+ * Antrenman günü varsayılan planı — 3.303 kcal · P 167 · K 488 · Y 72.
+ * Protein 165 g ve yağ 72 g hedefine göre kurulup, kalan kalori pirinçten
+ * tamamlandı. Dinlenme gününde 2. ve 3. öğünün pirinci düşer (~2.910 kcal).
  */
 export const DEFAULT_PLAN: Meal[] = [
   {
     id: 'meal1',
     name: 'Öğün 1 — Sabah',
     items: [
-      { foodId: 'oats', amount: 130 },
+      { foodId: 'oats', amount: 100 },
       { foodId: 'whey', amount: 30 },
       { foodId: 'banana', amount: 150 },
       { foodId: 'milk', amount: 300 },
-      { foodId: 'peanut_butter', amount: 25 },
+      { foodId: 'peanut_butter', amount: 15 },
     ],
   },
   {
     id: 'meal2',
     name: 'Öğün 2 — Antrenman sonrası',
     items: [
-      { foodId: 'chicken', amount: 180 },
-      { foodId: 'rice', amount: 190 },
-      { foodId: 'olive_oil', amount: 20 },
+      { foodId: 'chicken', amount: 130 },
+      { foodId: 'rice', amount: 240 },
+      { foodId: 'olive_oil', amount: 19 },
     ],
   },
   {
     id: 'meal3',
     name: 'Öğün 3 — Akşam',
     items: [
-      { foodId: 'chicken', amount: 165 },
-      { foodId: 'rice', amount: 175 },
-      { foodId: 'olive_oil', amount: 20 },
+      { foodId: 'chicken', amount: 120 },
+      { foodId: 'rice', amount: 225 },
+      { foodId: 'olive_oil', amount: 19 },
     ],
   },
 ];

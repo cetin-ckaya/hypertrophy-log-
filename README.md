@@ -69,8 +69,8 @@ npm run build:web  # PWA çıktısı -> dist/
 - Günde 3 öğün, gramajları ile listelenir; öğünü yediğinde işaretlersin.
 - Günlük kalori ve makrolar üstte canlı, hedefe göre yüzde barıyla.
 - **Antrenman günü / dinlenme günü** ayrımı: dinlenme gününde 1. öğün dışındaki
-  öğünlerin pirinci otomatik 60 g düşer (Öğün 2: 190 → 130 g, Öğün 3: 175 → 115 g),
-  toplam ~2.860 kcal'a iner.
+  öğünlerin pirinci otomatik 60 g düşer (Öğün 2: 240 → 180 g, Öğün 3: 225 → 165 g);
+  protein 165 g'ın altına inmesin diye tavuk dengelenir → ~2.912 kcal.
 - Gramajları o güne özel düzenleyebilir, besin ekleyip çıkarabilirsin;
   "Plan" sekmesinden varsayılan planı değiştirirsin (geçmiş günler korunur).
 - 18 besinlik veritabanı (100 g / 100 ml, çiğ-kuru ölçü) + kendi besinini ekleme.
@@ -105,18 +105,24 @@ npm run build:web  # PWA çıktısı -> dist/
 
 ## Varsayılan öğün planı
 
-Toplam **3.293 kcal · P 197 g · K 431 g · Y 83 g** (antrenman günü).
+Hedefler: **3.300 kcal · protein 165 g · yağ 72 g**. Protein ve yağ sabit
+tutulup kalan kalori pirinçten tamamlandığı için karbonhidrat **488 g**'a çıkar.
+
+Antrenman günü toplamı: **3.303 kcal · P 167 g · K 488 g · Y 72 g**
 
 | | Öğün 1 — Sabah | Öğün 2 — Antrenman sonrası | Öğün 3 — Akşam |
 |---|---|---|---|
-| | Yulaf (kuru) 130 g | Tavuk göğsü (çiğ) 180 g | Tavuk göğsü (çiğ) 165 g |
-| | Whey 30 g | Pirinç (kuru) 190 g | Pirinç (kuru) 175 g |
-| | Muz 150 g | Zeytinyağı 20 ml | Zeytinyağı 20 ml |
+| | Yulaf (kuru) 100 g | Tavuk göğsü (çiğ) 130 g | Tavuk göğsü (çiğ) 120 g |
+| | Whey 30 g | Pirinç (kuru) 240 g | Pirinç (kuru) 225 g |
+| | Muz 150 g | Zeytinyağı 19 ml | Zeytinyağı 19 ml |
 | | Süt 300 ml | | |
-| | Fıstık ezmesi 25 g | | |
-| **Toplam** | 1.056 kcal · P 64 · K 142 · Y 29 | 1.158 kcal · P 69 · K 150 · Y 28 | 1.079 kcal · P 63 · K 138 · Y 27 |
+| | Fıstık ezmesi 15 g | | |
+| **Toplam** | 881 kcal · P 57 · K 120 · Y 22 | 1.246 kcal · P 57 · K 190 · Y 25 | 1.176 kcal · P 53 · K 178 · Y 25 |
 
-Dinlenme günü: Öğün 2 ve 3'ün pirinci −60 g → **~2.861 kcal**.
+**Dinlenme günü:** Öğün 2 ve 3'ün pirinci −60 g. Pirinç azalınca protein 158 g'a
+düşeceği için tavuk otomatik dengelenir (130 → 145 g, 120 → 130 g) ve toplam
+**2.912 kcal · P 166 g · K 393 g · Y 72 g** olur — protein tabanı hiçbir günde
+165 g'ın altına inmez.
 
 Gramajlar Ayarlar/Beslenme → "Plan" sekmesinden değiştirilebilir; hedef kalori de
 oradan ayarlanır. Plan ile hedef arasında 40 kcal'dan fazla fark oluşursa
