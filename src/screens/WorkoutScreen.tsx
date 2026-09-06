@@ -152,7 +152,7 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
           const allDone = ex.sets.every((s) => s.done);
           const isCollapsed = collapsed[exIndex] ?? false;
           const sugColor =
-            suggestion.kind === 'increase'
+            suggestion.kind === 'increase' || suggestion.kind === 'rep_progress'
               ? colors.success
               : suggestion.kind === 'stall'
               ? colors.warning

@@ -25,6 +25,12 @@ export const totalReps = (sets: SetLog[]): number =>
 export const setVolume = (sets: SetLog[]): number =>
   sets.filter(isLogged).reduce((sum, s) => sum + s.weight * s.reps, 0);
 
+/** Set başına ortalama tekrar — set sayısı değişse de karşılaştırılabilir kalsın diye. */
+export const avgReps = (sets: SetLog[]): number => {
+  const logged = sets.filter(isLogged);
+  return logged.length === 0 ? 0 : totalReps(sets) / logged.length;
+};
+
 export const formatSets = (sets: SetLog[]): string =>
   sets
     .filter(isLogged)
@@ -73,12 +79,29 @@ export const lastPerformance = (
   return any.length > 0 ? { ...any[0], sameDay: false } : null;
 };
 
-export type SuggestionKind = 'first' | 'increase' | 'hold' | 'stall';
+export type SuggestionKind = 'first' | 'increase' | 'rep_progress' | 'hold' | 'stall';
 
 export type Suggestion = {
   kind: SuggestionKind;
   text: string;
   targetWeight?: number;
+  /** Bu hareket son antrenmanda ilerleme kaydetti mi (ağırlık veya tekrar). */
+  progressed?: boolean;
+};
+
+/**
+ * İki antrenman arasında overload olup olmadığı.
+ * Ağırlık arttıysa VEYA aynı ağırlıkta set başına tekrar arttıysa overload sayılır.
+ */
+export const didOverload = (
+  current: SessionExercise,
+  previous: SessionExercise
+): 'weight' | 'reps' | null => {
+  const wNow = topWeight(current.sets);
+  const wPrev = topWeight(previous.sets);
+  if (wNow > wPrev) return 'weight';
+  if (wNow === wPrev && avgReps(current.sets) > avgReps(previous.sets)) return 'reps';
+  return null;
 };
 
 export const increment = (exerciseId: string, settings: Settings): number => {
@@ -91,8 +114,9 @@ export const increment = (exerciseId: string, settings: Settings): number => {
 /**
  * Progressive overload önerisi:
  * - Hedef aralığın üst sınırına TÜM work-set'lerde ulaşıldıysa → ağırlığı artır
- * - Altında kalındıysa → aynı ağırlıkta kal
- * - Aynı ağırlıkta 3 antrenman üst üste ilerleme yoksa → deload / form uyarısı
+ * - Ağırlık aynı kalıp set başına tekrar arttıysa → bu da overload; ağırlıkta kal
+ * - Hiçbiri olmadıysa → aynı ağırlıkta kal
+ * - Aynı ağırlıkta 3 antrenman üst üste ne ağırlık ne tekrar arttıysa → deload / form uyarısı
  */
 export const buildSuggestion = (
   sessions: WorkoutSession[],
@@ -110,10 +134,15 @@ export const buildSuggestion = (
   const weight = topWeight(last.exercise.sets);
   const step = increment(exerciseId, settings);
 
+  const previous = history[1] ?? null;
+  const overload = previous ? didOverload(last.exercise, previous.exercise) : null;
+
+  // Son 3 antrenmanın hiçbirinde ne ağırlık ne de tekrar arttıysa takılma vardır.
   const stalled =
     history.length >= 3 &&
     history.slice(0, 3).every((h) => topWeight(h.exercise.sets) === weight) &&
-    totalReps(history[0].exercise.sets) <= totalReps(history[2].exercise.sets);
+    didOverload(history[0].exercise, history[1].exercise) === null &&
+    didOverload(history[1].exercise, history[2].exercise) === null;
 
   const hitTop = sets.length > 0 && sets.every((s) => s.reps >= repMax);
 
@@ -122,7 +151,29 @@ export const buildSuggestion = (
     return {
       kind: 'increase',
       targetWeight: target,
+      progressed: overload !== null,
       text: `Tüm setlerde ${repMax} tekrara ulaştın → ${trimNum(target)} kg dene (+${trimNum(step)} kg).`,
+    };
+  }
+
+  if (overload === 'reps') {
+    const gain = avgReps(last.exercise.sets) - avgReps((previous as PastPerformance).exercise.sets);
+    return {
+      kind: 'rep_progress',
+      targetWeight: weight,
+      progressed: true,
+      text: `Overload ✓ — aynı ${trimNum(weight)} kg'da set başına +${trimNum(
+        Math.round(gain * 10) / 10
+      )} tekrar yaptın. ${trimNum(weight)} kg'da kal, tüm setlerde ${repMax} tekrara ulaşınca ağırlığı artır.`,
+    };
+  }
+
+  if (overload === 'weight') {
+    return {
+      kind: 'rep_progress',
+      targetWeight: weight,
+      progressed: true,
+      text: `Overload ✓ — ağırlığı ${trimNum(weight)} kg'a çıkardın. Burada tekrarları ${repMax}'e taşımaya çalış.`,
     };
   }
 
@@ -130,13 +181,15 @@ export const buildSuggestion = (
     return {
       kind: 'stall',
       targetWeight: weight,
-      text: `3 antrenmandır ${trimNum(weight)} kg'da ilerleme yok. Deload (%10 düşür) veya form/dinlenme kontrolü yap.`,
+      progressed: false,
+      text: `3 antrenmandır ${trimNum(weight)} kg'da ne ağırlık ne tekrar arttı. Deload (%10 düşür) veya form/dinlenme kontrolü yap.`,
     };
 
   return {
     kind: 'hold',
     targetWeight: weight,
-    text: `${trimNum(weight)} kg'da kal, hedef üst sınıra (${repMax} tekrar) ulaşmaya çalış.`,
+    progressed: false,
+    text: `${trimNum(weight)} kg'da kal — ağırlığı artırmadan tekrar eklemek de overload sayılır. Hedef üst sınır ${repMax} tekrar.`,
   };
 };
 

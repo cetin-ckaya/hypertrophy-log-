@@ -25,11 +25,15 @@ npm start
 - Her hareket için set set **ağırlık (kg)** ve **tekrar** girişi; büyük +/− butonları ve numerik klavye.
 - **Geçen sefer aynı antrenmanda ne yaptığın** her hareketin hemen altında görünür
   (örn. `107,5 kg × 6, 107,5 kg × 5`).
-- **Progressive overload önerisi:**
+- **Progressive overload önerisi** — overload sadece ağırlık artışı değil,
+  aynı ağırlıkta tekrar artışı da sayılır:
   - Tüm work-set'lerde hedef aralığın üst sınırına ulaştıysan → ağırlığı artır
     (compound +2,5 kg, izolasyon +1,25 kg — ayarlardan değiştirilebilir).
-  - Aralığın altında kaldıysan → aynı ağırlıkta kal.
-  - Aynı ağırlıkta 3 antrenman ilerleme yoksa → deload / form kontrolü uyarısı.
+  - Ağırlık aynı kalıp **set başına ortalama tekrar arttıysa** → "Overload ✓",
+    aynı ağırlıkta kalıp üst sınıra taşıman söylenir.
+  - Hiçbiri olmadıysa → aynı ağırlıkta kal.
+  - Aynı ağırlıkta 3 antrenman boyunca **ne ağırlık ne tekrar** artmadıysa →
+    deload / form kontrolü uyarısı.
 - Setler arası **dinlenme sayacı** (varsayılan 120 sn, ±30 sn ayarlanabilir, bitince titreşim).
 - Yeni antrenman açıldığında setler önerilen ağırlıkla önden doldurulur.
 
