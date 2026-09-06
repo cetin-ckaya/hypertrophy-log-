@@ -25,6 +25,10 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
-    }
+    },
+    "experiments": {
+      "baseUrl": "/hypertrophy-log-"
+    },
+    "description": "Kişisel antrenman ve beslenme takibi."
   }
 }

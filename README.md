@@ -4,18 +4,44 @@ Tek kullanıcılık, Türkçe, koyu temalı bir antrenman ve beslenme takip uygu
 Telefonda gerçek bir mobil uygulama olarak (Expo Go / APK), bilgisayarda tarayıcıdan çalışır.
 Tüm veriler cihazda saklanır — sunucu, hesap veya internet gerekmez.
 
-## Kurulum
+## Telefona kurulum — ana ekranda simge
+
+Uygulama **kurulabilir bir PWA** olarak yayınlanıyor: bir kez kurduktan sonra
+telefonun ana ekranında kendi simgesiyle durur, tam ekran açılır (tarayıcı çubuğu
+görünmez) ve internet olmadan da çalışır. App Store / Play Store hesabı,
+Expo Go, bilgisayar — hiçbiri gerekmez.
+
+### 1. Yayına al (bir kez, ~2 dakika)
+
+1. Bu dalı `main`'e birleştir (Pages iş akışı `main`'den çalışır).
+2. GitHub'da depo **Settings → General → Danger Zone → Change visibility → Public**.
+   (GitHub Pages ücretsiz hesapta yalnızca public depolarda çalışır. Depoda kişisel
+   veri yok — antrenman ve kilo kayıtların yalnızca telefonunda tutulur, buraya
+   hiçbir şey gönderilmez.)
+3. **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+4. **Actions** sekmesinde "Deploy PWA to GitHub Pages" yeşile dönünce adresin hazır:
+
+   `https://cetin-ckaya.github.io/hypertrophy-log-/`
+
+Bundan sonra `main`'e her push otomatik yayınlanır.
+
+### 2. Ana ekrana ekle
+
+- **iPhone (Safari ile açman şart):** adresi aç → alttaki **Paylaş** simgesi →
+  **Ana Ekrana Ekle** → **Ekle**. Simge ana ekranda belirir, dokununca tam ekran açılır.
+- **Android (Chrome):** adresi aç → sağ üst **⋮** → **Uygulamayı yükle**
+  (veya çıkan "Ana ekrana ekle" bildirimi).
+
+Veriler o cihazın tarayıcısında saklanır; simgeden açtığında hep aynı verilere
+dönersin. Yedek için Ayarlar → Yedekleme'den JSON al.
+
+## Geliştirme (isteğe bağlı)
 
 ```bash
 npm install
-npm start
+npm start        # Expo Go ile telefonda veya 'w' ile tarayıcıda
+npm run build:web  # PWA çıktısı -> dist/
 ```
-
-- **Telefon:** App Store / Play Store'dan **Expo Go** uygulamasını kur, terminalde çıkan QR kodu okut.
-  (Telefon ve bilgisayar aynı Wi-Fi ağında olmalı. Farklı ağdaysan `npx expo start --tunnel` kullan.)
-- **Bilgisayar:** terminalde `w` tuşuna bas, tarayıcıda açılır.
-- **Android APK (isteğe bağlı, Expo Go'suz kullanım için):**
-  `npx eas build -p android --profile preview` (ücretsiz Expo hesabı gerekir).
 
 ## Ne yapar
 
@@ -25,10 +51,12 @@ npm start
 - Her hareket için set set **ağırlık (kg)** ve **tekrar** girişi; büyük +/− butonları ve numerik klavye.
 - **Geçen sefer aynı antrenmanda ne yaptığın** her hareketin hemen altında görünür
   (örn. `107,5 kg × 6, 107,5 kg × 5`).
+- **Hedef tekrar aralığı: tüm hareketlerde 6–8.**
 - **Progressive overload önerisi** — overload sadece ağırlık artışı değil,
   aynı ağırlıkta tekrar artışı da sayılır:
   - Tüm work-set'lerde hedef aralığın üst sınırına ulaştıysan → ağırlığı artır
-    (compound +2,5 kg, izolasyon +1,25 kg — ayarlardan değiştirilebilir).
+    (yani iki work-set'te de 8 tekrar → compound +2,5 kg, izolasyon +1,25 kg;
+    ayarlardan değiştirilebilir).
   - Ağırlık aynı kalıp **set başına ortalama tekrar arttıysa** → "Overload ✓",
     aynı ağırlıkta kalıp üst sınıra taşıman söylenir.
   - Hiçbiri olmadıysa → aynı ağırlıkta kal.
@@ -41,7 +69,8 @@ npm start
 - Günde 3 öğün, gramajları ile listelenir; öğünü yediğinde işaretlersin.
 - Günlük kalori ve makrolar üstte canlı, hedefe göre yüzde barıyla.
 - **Antrenman günü / dinlenme günü** ayrımı: dinlenme gününde 1. öğün dışındaki
-  öğünlerin pirinci otomatik 35 g düşer (120 g → 85 g).
+  öğünlerin pirinci otomatik 60 g düşer (Öğün 2: 190 → 130 g, Öğün 3: 175 → 115 g),
+  toplam ~2.860 kcal'a iner.
 - Gramajları o güne özel düzenleyebilir, besin ekleyip çıkarabilirsin;
   "Plan" sekmesinden varsayılan planı değiştirirsin (geçmiş günler korunur).
 - 18 besinlik veritabanı (100 g / 100 ml, çiğ-kuru ölçü) + kendi besinini ekleme.
@@ -74,19 +103,31 @@ npm start
 - Ayarlar → Yedekleme'den **JSON dışa aktarma** (paylaş / indir / panoya kopyala) ve
   dosyadan veya yapıştırarak **geri yükleme**.
 
-## Kalori hedefi ile plan arasındaki fark
+## Varsayılan öğün planı
 
-Verdiğin öğün planının gerçek toplamı **~2.700 kcal** (P 181 / K 311 / Y 78);
-belirttiğin hedef ise 3.300 kcal (P 165 / K 400 / Y 72). İkisi tutmadığı için
-uygulama hedefi ayrı ve düzenlenebilir tutuyor, planla hedef arasında 40 kcal'dan
-fazla fark varsa Beslenme ekranında uyarı kartı gösteriyor ve tek dokunuşla
-**"Planı hedefe göre dengele"** diyebiliyorsun (fark karbonhidrattan kapatılır,
-protein tabanı korunur). Hedefi de aynı ekrandan istediğin değere çekebilirsin.
+Toplam **3.293 kcal · P 197 g · K 431 g · Y 83 g** (antrenman günü).
+
+| | Öğün 1 — Sabah | Öğün 2 — Antrenman sonrası | Öğün 3 — Akşam |
+|---|---|---|---|
+| | Yulaf (kuru) 130 g | Tavuk göğsü (çiğ) 180 g | Tavuk göğsü (çiğ) 165 g |
+| | Whey 30 g | Pirinç (kuru) 190 g | Pirinç (kuru) 175 g |
+| | Muz 150 g | Zeytinyağı 20 ml | Zeytinyağı 20 ml |
+| | Süt 300 ml | | |
+| | Fıstık ezmesi 25 g | | |
+| **Toplam** | 1.056 kcal · P 64 · K 142 · Y 29 | 1.158 kcal · P 69 · K 150 · Y 28 | 1.079 kcal · P 63 · K 138 · Y 27 |
+
+Dinlenme günü: Öğün 2 ve 3'ün pirinci −60 g → **~2.861 kcal**.
+
+Gramajlar Ayarlar/Beslenme → "Plan" sekmesinden değiştirilebilir; hedef kalori de
+oradan ayarlanır. Plan ile hedef arasında 40 kcal'dan fazla fark oluşursa
+Beslenme ekranında uyarı kartı ve tek dokunuşluk **"Planı hedefe göre dengele"**
+düğmesi çıkar (fark karbonhidrattan kapatılır, protein tabanı korunur).
 
 ## Teknoloji
 
 React Native + Expo (SDK 57) · TypeScript · zustand + AsyncStorage (kalıcı state) ·
-react-native-svg (grafikler, harici chart kütüphanesi yok) · özel sekme navigasyonu.
+react-native-svg (grafikler, harici chart kütüphanesi yok) · özel sekme navigasyonu ·
+servis çalışanı ile çevrimdışı PWA, GitHub Actions ile Pages'e otomatik yayın.
 
 ```
 App.tsx                  sekme kabuğu
@@ -96,6 +137,9 @@ src/logic/               progression, beslenme, kilo/otomatik ayar, tarih yardı
 src/store/store.ts       kalıcı state ve tüm aksiyonlar
 src/components/          ortak arayüz bileşenleri ve grafikler
 src/screens/             Ana, Antrenman, Beslenme, Kilo, İstatistik, Ayarlar
+public/                  PWA manifesti, servis çalışanı, ana ekran simgeleri
+scripts/pwa-postbuild.mjs  web çıktısını kurulabilir PWA'ya çevirir
+.github/workflows/       GitHub Pages yayın iş akışı
 ```
 
 ## Komutlar

@@ -35,17 +35,22 @@ export const DEFAULT_FOODS: Record<string, Food> = Object.fromEntries(
   ].map((x) => [x.id, x])
 );
 
-/** Antrenman günü varsayılan planı. Dinlenme gününde pirinç otomatik düşürülür. */
+/**
+ * Antrenman günü varsayılan planı — toplam ~3.300 kcal.
+ * Gramajlar, tablodaki toplamlara gerçekten ulaşacak şekilde ayarlandı;
+ * protein kaynakları (tavuk 180/165 g) korundu, fark karbonhidrattan kapatıldı.
+ * Dinlenme gününde 2. ve 3. öğünün pirinci otomatik düşer (~2.850 kcal).
+ */
 export const DEFAULT_PLAN: Meal[] = [
   {
     id: 'meal1',
     name: 'Öğün 1 — Sabah',
     items: [
-      { foodId: 'oats', amount: 100 },
+      { foodId: 'oats', amount: 130 },
       { foodId: 'whey', amount: 30 },
       { foodId: 'banana', amount: 150 },
       { foodId: 'milk', amount: 300 },
-      { foodId: 'peanut_butter', amount: 20 },
+      { foodId: 'peanut_butter', amount: 25 },
     ],
   },
   {
@@ -53,7 +58,7 @@ export const DEFAULT_PLAN: Meal[] = [
     name: 'Öğün 2 — Antrenman sonrası',
     items: [
       { foodId: 'chicken', amount: 180 },
-      { foodId: 'rice', amount: 120 },
+      { foodId: 'rice', amount: 190 },
       { foodId: 'olive_oil', amount: 20 },
     ],
   },
@@ -62,7 +67,7 @@ export const DEFAULT_PLAN: Meal[] = [
     name: 'Öğün 3 — Akşam',
     items: [
       { foodId: 'chicken', amount: 165 },
-      { foodId: 'rice', amount: 120 },
+      { foodId: 'rice', amount: 175 },
       { foodId: 'olive_oil', amount: 20 },
     ],
   },

@@ -32,7 +32,7 @@ const DEFAULT_SETTINGS: Settings = {
   restSeconds: 120,
   compoundIncrement: 2.5,
   isolationIncrement: 1.25,
-  restDayCarbReduction: 35,
+  restDayCarbReduction: 60,
   proteinFloor: 165,
   autoAdjustEnabled: true,
 };
@@ -126,7 +126,7 @@ const initialState = (): State => ({
   foods: clone(DEFAULT_FOODS),
   plan: clone(DEFAULT_PLAN),
   calorieTarget: 3300,
-  macroTargets: { protein: 165, carbs: 400, fat: 72 },
+  macroTargets: { protein: 195, carbs: 430, fat: 83 },
   targetHistory: [{ date: todayKey(), kcal: 3300 }],
   dayLogs: {},
   weights: {},
@@ -580,7 +580,39 @@ export const useStore = create<Store>()(
     }),
     {
       name: 'hipertrofi-store-v1',
+      version: 2,
       storage: createJSONStorage(() => AsyncStorage),
+      /**
+       * v2: öğün planı ~3.300 kcal'a çıkarıldı ve makro hedefleri planın gerçek
+       * değerlerine oturtuldu. Kullanıcı beslenme tarafına hiç dokunmadıysa
+       * (günlük kaydı ve kalori ayarı yoksa) yeni varsayılanlar uygulanır;
+       * dokunduysa mevcut planı bozmamak için olduğu gibi bırakılır.
+       */
+      migrate: (persisted, version) => {
+        const state = persisted as Partial<State> | undefined;
+        if (!state) return persisted as Store;
+        if (version < 2) {
+          const untouched =
+            Object.keys(state.dayLogs ?? {}).length === 0 &&
+            (state.adjustments ?? []).length === 0;
+          if (untouched) {
+            const base = initialState();
+            return {
+              ...state,
+              plan: base.plan,
+              macroTargets: base.macroTargets,
+              calorieTarget: base.calorieTarget,
+              targetHistory: base.targetHistory,
+              settings: {
+                ...base.settings,
+                ...(state.settings ?? {}),
+                restDayCarbReduction: base.settings.restDayCarbReduction,
+              },
+            } as Store;
+          }
+        }
+        return persisted as Store;
+      },
       partialize: (s) => {
         const { hydrated, ...rest } = s;
         return rest as Store;
