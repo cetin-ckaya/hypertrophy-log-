@@ -18,8 +18,9 @@ Expo Go, bilgisayar — hiçbiri gerekmez.
    (GitHub Pages ücretsiz hesapta yalnızca public depolarda çalışır. Depoda kişisel
    veri yok — antrenman ve kilo kayıtların yalnızca telefonunda tutulur, buraya
    hiçbir şey gönderilmez.)
-3. **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-4. **Actions** sekmesinde "Deploy PWA to GitHub Pages" yeşile dönünce adresin hazır:
+3. **Actions** sekmesinde "Deploy PWA to GitHub Pages" yeşile dönünce adresin hazır
+   (Pages ayarını iş akışı kendisi açar; açmazsa Settings → Pages → Source:
+   GitHub Actions seçip işi yeniden çalıştır):
 
    `https://cetin-ckaya.github.io/hypertrophy-log-/`
 
