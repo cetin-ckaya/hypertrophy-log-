@@ -74,7 +74,7 @@ export const StatsScreen = () => {
   const totalVolume = completed.reduce((sum, s) => sum + sessionVolume(s), 0);
 
   return (
-    <Screen title="İstatistikler">
+    <Screen title="İstatistikler" subtitle="İlerleme, hacim ve rekorlar">
       <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
         <StatTile label="ANTRENMAN" value={String(completed.length)} sub="tamamlanan" />
         <StatTile

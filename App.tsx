@@ -12,7 +12,7 @@ import { StatsScreen } from './src/screens/StatsScreen';
 import { WeightScreen } from './src/screens/WeightScreen';
 import { WorkoutScreen } from './src/screens/WorkoutScreen';
 import { useStore } from './src/store/store';
-import { colors, font } from './src/theme';
+import { colors, radius } from './src/theme';
 
 const Shell = () => {
   const hydrated = useStore((s) => s.hydrated);
@@ -33,23 +33,24 @@ const Shell = () => {
         {tab === 'settings' ? <SettingsScreen /> : null}
       </View>
 
-      <View style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-        {TABS.map((t) => {
-          const active = tab === t.key;
+      <View style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+        {TABS.map(({ key, label, Icon }) => {
+          const active = tab === key;
           return (
             <Pressable
-              key={t.key}
+              key={key}
               style={styles.tab}
-              onPress={() => setTab(t.key)}
+              onPress={() => setTab(key)}
               accessibilityRole="button"
-              accessibilityLabel={t.label}
+              accessibilityLabel={label}
+              accessibilityState={{ selected: active }}
             >
-              <View style={styles.iconWrap}>
-                <Text style={[styles.icon, active ? { color: colors.primary } : null]}>{t.icon}</Text>
-                {t.key === 'workout' && hasActive ? <View style={styles.dot} /> : null}
+              <View style={[styles.pip, active ? styles.pipOn : null]}>
+                <Icon size={21} color={active ? colors.primary : colors.textFaint} />
+                {key === 'workout' && hasActive ? <View style={styles.dot} /> : null}
               </View>
               <Text style={[styles.tabLabel, active ? { color: colors.primary } : null]}>
-                {t.label}
+                {label}
               </Text>
             </Pressable>
           );
@@ -73,22 +74,28 @@ const styles = StyleSheet.create({
   content: { flex: 1 },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: colors.card,
+    backgroundColor: '#0A0C11',
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    paddingTop: 8,
+    paddingTop: 10,
   },
-  tab: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 2, minHeight: 48 },
-  iconWrap: { alignItems: 'center', justifyContent: 'center' },
-  icon: { fontSize: 20, color: colors.textFaint, lineHeight: 24 },
+  tab: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 2 },
+  pip: {
+    width: 30,
+    height: 28,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pipOn: { backgroundColor: 'rgba(76,141,255,0.16)' },
   dot: {
     position: 'absolute',
-    top: 0,
-    right: -8,
-    width: 8,
-    height: 8,
+    top: 1,
+    right: 1,
+    width: 7,
+    height: 7,
     borderRadius: 4,
     backgroundColor: colors.success,
   },
-  tabLabel: { ...font.tiny, fontSize: 10, fontWeight: '600' },
+  tabLabel: { fontSize: 9.5, fontWeight: '700', color: colors.textFaint },
 });
