@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle } from 'react-native-svg';
 
 import { mmss } from '../logic/date';
-import { colors, font, radius, spacing } from '../theme';
+import { colors, font, radius, restGradient, spacing } from '../theme';
 
 export const RestTimer = ({
   endsAt,
@@ -35,59 +37,80 @@ export const RestTimer = ({
 
   const pct = duration > 0 ? Math.max(0, Math.min(1, remaining / duration)) : 0;
   const done = remaining <= 0;
+  const size = 52;
+  const r = 22;
+  const c = 2 * Math.PI * r;
 
   return (
-    <View style={[styles.wrap, done ? { borderColor: colors.success } : null]}>
-      <View style={[styles.fill, { width: `${pct * 100}%` }]} />
-      <View style={styles.content}>
-        <View>
-          <Text style={font.tiny}>{done ? 'DİNLENME BİTTİ' : 'DİNLENME'}</Text>
-          <Text style={[styles.time, done ? { color: colors.success } : null]}>
-            {mmss(remaining)}
-          </Text>
-        </View>
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <Pressable style={styles.btn} onPress={() => onExtend(-30)}>
-            <Text style={styles.btnText}>−30 sn</Text>
-          </Pressable>
-          <Pressable style={styles.btn} onPress={() => onExtend(30)}>
-            <Text style={styles.btnText}>+30 sn</Text>
-          </Pressable>
-          <Pressable style={[styles.btn, styles.close]} onPress={onStop}>
-            <Text style={styles.btnText}>Bitir</Text>
-          </Pressable>
-        </View>
+    <LinearGradient
+      colors={restGradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[styles.wrap, done ? { borderColor: colors.success } : null]}
+    >
+      <Svg width={size} height={size}>
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke="#2E3B55" strokeWidth={4.5} fill="none" />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={done ? colors.success : colors.primary}
+          strokeWidth={4.5}
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={`${c}`}
+          strokeDashoffset={c * (1 - pct)}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      </Svg>
+
+      <View style={{ flex: 1 }}>
+        <Text style={[font.label, { color: '#8FA6CC' }]}>
+          {done ? 'Dinlenme bitti' : 'Dinlenme'}
+        </Text>
+        <Text style={[styles.time, done ? { color: colors.success } : null]}>{mmss(remaining)}</Text>
       </View>
-    </View>
+
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <Pressable style={styles.btn} onPress={() => onExtend(30)}>
+          <Text style={styles.btnText}>+30 sn</Text>
+        </Pressable>
+        <Pressable style={[styles.btn, styles.primary]} onPress={onStop}>
+          <Text style={[styles.btnText, { color: '#fff' }]}>Bitir</Text>
+        </Pressable>
+      </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.cardAlt,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    overflow: 'hidden',
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.sm,
-  },
-  fill: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: '#1E293B' },
-  content: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing.md,
-  },
-  time: { fontSize: 24, fontWeight: '800', color: colors.text },
-  btn: {
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    borderRadius: radius.sm,
-    backgroundColor: colors.card,
+    gap: spacing.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#2A3A5C',
+    padding: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
   },
-  close: { backgroundColor: colors.primary, borderColor: colors.primary },
-  btnText: { color: colors.text, fontWeight: '700', fontSize: 12 },
+  time: {
+    fontSize: 27,
+    fontWeight: '800',
+    color: colors.text,
+    letterSpacing: -0.8,
+    marginTop: 1,
+    fontVariant: ['tabular-nums'],
+  },
+  btn: {
+    height: 42,
+    paddingHorizontal: 14,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primary: { backgroundColor: colors.primary },
+  btnText: { color: '#CBD7EC', fontWeight: '800', fontSize: 13 },
 });

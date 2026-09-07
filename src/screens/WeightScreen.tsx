@@ -3,7 +3,18 @@ import { Pressable, Text, View } from 'react-native';
 
 import { AdjustmentCard } from '../components/AdjustmentCard';
 import { LineChart } from '../components/charts';
-import { Button, Card, NumberStepper, Row, Screen, SectionTitle, StatTile } from '../components/ui';
+import { ChevronLeftIcon, ChevronRightIcon } from '../components/icons';
+import {
+  Badge,
+  Button,
+  Card,
+  Label,
+  NumberStepper,
+  Row,
+  Screen,
+  SectionTitle,
+  StatTile,
+} from '../components/ui';
 import { addDays, formatRelative, formatShort, todayKey } from '../logic/date';
 import { latestAverage, sortedWeights, trendArrow, weeklyTrend, weightSeries } from '../logic/weight';
 import { useStore } from '../store/store';
@@ -24,7 +35,7 @@ export const WeightScreen = () => {
   const labels = points.map((p) => formatShort(p.date));
 
   return (
-    <Screen title="Kilo takibi">
+    <Screen title="Kilo takibi" subtitle="Sabah, aç karnına">
       {state.pendingAdjustment ? <AdjustmentCard /> : null}
 
       <Card>
@@ -32,14 +43,20 @@ export const WeightScreen = () => {
         <Text style={font.small}>Aç karnına, tuvaletten sonra, aynı saatte ölç.</Text>
         <Row style={{ justifyContent: 'space-between' }}>
           <Pressable onPress={() => setDate(addDays(date, -1))} hitSlop={10}>
-            <Text style={{ color: colors.primary, fontWeight: '700' }}>‹ Önceki</Text>
+            <Row gap={4}>
+              <ChevronLeftIcon size={15} color={colors.primary} />
+              <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 12.5 }}>Önceki</Text>
+            </Row>
           </Pressable>
           <Text style={font.h3}>{formatRelative(date)}</Text>
           <Pressable
             onPress={() => setDate(addDays(date, 1) > todayKey() ? todayKey() : addDays(date, 1))}
             hitSlop={10}
           >
-            <Text style={{ color: colors.primary, fontWeight: '700' }}>Sonraki ›</Text>
+            <Row gap={4}>
+              <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 12.5 }}>Sonraki</Text>
+              <ChevronRightIcon size={15} color={colors.primary} />
+            </Row>
           </Pressable>
         </Row>
         <NumberStepper
@@ -63,7 +80,7 @@ export const WeightScreen = () => {
           {state.weights[date] !== undefined ? (
             <Button
               title="Sil"
-              variant="ghost"
+              variant="soft"
               style={{ flex: 1 }}
               onPress={() => state.removeWeight(date)}
             />

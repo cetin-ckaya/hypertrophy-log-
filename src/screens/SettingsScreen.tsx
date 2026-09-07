@@ -77,7 +77,7 @@ export const SettingsScreen = () => {
   };
 
   return (
-    <Screen title="Ayarlar">
+    <Screen title="Ayarlar" subtitle="Program, beslenme ve yedekleme">
       <SectionTitle>Antrenman</SectionTitle>
       <Card>
         <Text style={font.small}>Setler arası dinlenme süresi</Text>
@@ -200,11 +200,11 @@ export const SettingsScreen = () => {
           Tüm veriler cihazında saklanır. Düzenli olarak JSON yedeği almanı öneririm.
         </Text>
         <Button title="JSON olarak dışa aktar" onPress={exportFile} />
-        <Button title="JSON'u panoya kopyala" variant="ghost" onPress={copyJson} />
-        <Button title="Dosyadan geri yükle" variant="ghost" onPress={importFromFile} />
+        <Button title="JSON'u panoya kopyala" variant="soft" onPress={copyJson} />
+        <Button title="Dosyadan geri yükle" variant="soft" onPress={importFromFile} />
         <Button
           title={showImport ? 'Yapıştırma alanını kapat' : 'JSON yapıştırarak geri yükle'}
-          variant="ghost"
+          variant="soft"
           onPress={() => setShowImport(!showImport)}
         />
         {showImport ? (
@@ -264,13 +264,13 @@ export const SettingsScreen = () => {
             />
             <Button
               title="Vazgeç"
-              variant="ghost"
+              variant="soft"
               style={{ flex: 1 }}
               onPress={() => setConfirmReset(false)}
             />
           </Row>
         ) : (
-          <Button title="Tüm verileri sıfırla" variant="ghost" onPress={() => setConfirmReset(true)} />
+          <Button title="Tüm verileri sıfırla" variant="soft" onPress={() => setConfirmReset(true)} />
         )}
       </Card>
       <View style={{ height: 8 }} />

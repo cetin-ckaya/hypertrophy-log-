@@ -1,19 +1,24 @@
 export const colors = {
-  bg: '#0B0E14',
-  card: '#151A23',
-  cardAlt: '#1C2230',
-  border: '#252C3A',
-  text: '#EEF2F8',
-  textDim: '#93A0B4',
-  textFaint: '#5E6B7E',
-  primary: '#3B82F6',
-  primaryDim: '#1D4ED8',
-  success: '#22C55E',
-  warning: '#F59E0B',
-  danger: '#EF4444',
-  purple: '#A855F7',
-  cyan: '#06B6D4',
+  bg: '#07080B',
+  card: '#13161D',
+  cardAlt: '#191D26',
+  border: '#232733',
+  text: '#F2F5FA',
+  textDim: '#96A0B2',
+  textFaint: '#5A6474',
+  primary: '#4C8DFF',
+  primaryDeep: '#2563EB',
+  cyan: '#22D3EE',
+  success: '#A3E635',
+  successInk: '#16250A',
+  warning: '#FBBF24',
+  danger: '#FB7185',
+  violet: '#A78BFA',
 };
+
+/** Ana ekran hero kartının gradyanı. */
+export const heroGradient: [string, string, string] = ['#2563EB', '#4C8DFF', '#22D3EE'];
+export const restGradient: [string, string] = ['#1B2A4A', '#15202F'];
 
 /**
  * Kategorik seri paleti (koyu yüzey için doğrulanmış sıra).
@@ -29,6 +34,13 @@ export const series = [
   '#9085e9', // 7 mor
   '#e66767', // 8 kırmızı
 ];
+
+/** Makro renkleri — her biri metinle de etiketlendiği için renk tek başına taşıyıcı değil. */
+export const macroColors = {
+  protein: '#A3E635',
+  carbs: '#A78BFA',
+  fat: '#FBBF24',
+};
 
 /** Grafiklerde trapez, kullanıcının programındaki gibi sırt altında toplanır. */
 export const chartGroup = (group: string): string => (group === 'trapez' ? 'sirt' : group);
@@ -57,16 +69,25 @@ export const groupColors: Record<string, string> = {
   trapez: series[0],
 };
 
-export const grid = '#252C3A';
+export const grid = '#212633';
 
-export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 };
-export const radius = { sm: 8, md: 12, lg: 16, xl: 22 };
+export const spacing = { xs: 4, sm: 8, md: 12, lg: 18, xl: 24 };
+export const radius = { sm: 10, md: 14, lg: 20, xl: 22, pill: 999 };
 
 export const font = {
-  h1: { fontSize: 26, fontWeight: '800' as const, color: colors.text },
-  h2: { fontSize: 19, fontWeight: '700' as const, color: colors.text },
-  h3: { fontSize: 16, fontWeight: '700' as const, color: colors.text },
-  body: { fontSize: 15, color: colors.text },
-  small: { fontSize: 13, color: colors.textDim },
+  h1: { fontSize: 22, fontWeight: '800' as const, color: colors.text, letterSpacing: -0.6 },
+  h2: { fontSize: 19, fontWeight: '700' as const, color: colors.text, letterSpacing: -0.4 },
+  h3: { fontSize: 16, fontWeight: '700' as const, color: colors.text, letterSpacing: -0.3 },
+  body: { fontSize: 14.5, color: colors.text },
+  small: { fontSize: 12.5, color: colors.textDim },
   tiny: { fontSize: 11, color: colors.textFaint },
+  label: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase' as const,
+    color: colors.textFaint,
+  },
+  /** Rakamlar set girerken zıplamasın diye tabular. */
+  num: { fontVariant: ['tabular-nums'] } as { fontVariant: 'tabular-nums'[] },
 };
