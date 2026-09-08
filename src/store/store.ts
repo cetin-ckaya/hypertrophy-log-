@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { CARB_SOURCE_ID, DEFAULT_FOODS, DEFAULT_PLAN } from '../data/foods';
-import { CYCLE, DAYS, cycleDay } from '../data/program';
+import { DEFAULT_PROGRAM_ID, getProgram, cycleDayOf } from '../data/program';
 import { addDays, daysBetween, todayKey } from '../logic/date';
 import {
   buildDayMeals,
@@ -13,11 +13,13 @@ import {
   kcalToCarbGrams,
   planMacros,
 } from '../logic/nutrition';
+import { computeTargets } from '../logic/energy';
 import { buildSuggestion } from '../logic/progression';
 import { decideAdjustment, weeklyTrend } from '../logic/weight';
 import {
   Adjustment,
   DayLog,
+  EnergyTargets,
   Food,
   Meal,
   Profile,
@@ -37,7 +39,14 @@ const DEFAULT_SETTINGS: Settings = {
   autoAdjustEnabled: true,
 };
 
-const DEFAULT_PROFILE: Profile = { age: 22, heightCm: 188, startWeightKg: 78 };
+const DEFAULT_PROFILE: Profile = {
+  sex: 'erkek',
+  age: 22,
+  heightCm: 188,
+  startWeightKg: 78,
+  activity: 'orta',
+  goal: 'hacim',
+};
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
@@ -52,6 +61,7 @@ type State = {
   profile: Profile;
   settings: Settings;
 
+  programId: string;
   cycleIndex: number;
   sessions: WorkoutSession[];
   activeSession: WorkoutSession | null;
@@ -72,6 +82,7 @@ type Actions = {
   setHydrated: (v: boolean) => void;
 
   // Antrenman
+  setProgram: (id: string) => void;
   setCycleIndex: (i: number) => void;
   advanceCycle: () => void;
   startWorkout: (dayId?: string) => void;
@@ -98,6 +109,8 @@ type Actions = {
   removeFood: (foodId: string) => void;
   setCalorieTarget: (kcal: number) => void;
   matchPlanToTarget: () => void;
+  /** Profil ve güncel kilodan hesaplanan hedefleri uygular. */
+  applyEnergyTargets: (targets: EnergyTargets) => void;
 
   // Kilo & otomatik ayar
   logWeight: (date: string, kg: number) => void;
@@ -120,6 +133,7 @@ const initialState = (): State => ({
   hydrated: false,
   profile: DEFAULT_PROFILE,
   settings: DEFAULT_SETTINGS,
+  programId: DEFAULT_PROGRAM_ID,
   cycleIndex: 0,
   sessions: [],
   activeSession: null,
@@ -139,7 +153,9 @@ export const dayLogFor = (state: State, date: string): DayLog => {
   const existing = state.dayLogs[date];
   if (existing) return existing;
   const isTraining =
-    date === todayKey() ? cycleDay(state.cycleIndex).kind === 'workout' : true;
+    date === todayKey()
+      ? cycleDayOf(state.programId, state.cycleIndex).kind === 'workout'
+      : true;
   return {
     date,
     isTraining,
@@ -161,13 +177,21 @@ export const useStore = create<Store>()(
       setHydrated: (v) => set({ hydrated: v }),
 
       // ---------- Antrenman ----------
-      setCycleIndex: (i) => set({ cycleIndex: ((i % CYCLE.length) + CYCLE.length) % CYCLE.length }),
+      setProgram: (id) => set({ programId: getProgram(id).id, cycleIndex: 0, activeSession: null }),
 
-      advanceCycle: () => set((s) => ({ cycleIndex: (s.cycleIndex + 1) % CYCLE.length })),
+      setCycleIndex: (i) =>
+        set((s) => {
+          const len = getProgram(s.programId).cycle.length;
+          return { cycleIndex: ((i % len) + len) % len };
+        }),
+
+      advanceCycle: () =>
+        set((s) => ({ cycleIndex: (s.cycleIndex + 1) % getProgram(s.programId).cycle.length })),
 
       startWorkout: (dayId) => {
         const s = get();
-        const day = dayId ? DAYS[dayId] : cycleDay(s.cycleIndex);
+        const program = getProgram(s.programId);
+        const day = dayId ? program.days[dayId] : cycleDayOf(s.programId, s.cycleIndex);
         if (!day || day.kind !== 'workout') return;
         const session: WorkoutSession = {
           id: uid(),
@@ -251,10 +275,12 @@ export const useStore = create<Store>()(
           } else {
             dayLogs[date] = log;
           }
+          const cycle = getProgram(s.programId).cycle;
+          const at = cycle.indexOf(finished.dayId);
           return {
             sessions: [...s.sessions, finished],
             activeSession: null,
-            cycleIndex: (CYCLE.indexOf(finished.dayId) + 1) % CYCLE.length,
+            cycleIndex: at >= 0 ? (at + 1) % cycle.length : s.cycleIndex,
             dayLogs,
           };
         }),
@@ -442,6 +468,13 @@ export const useStore = create<Store>()(
           return { plan: next };
         }),
 
+      applyEnergyTargets: (targets) =>
+        set((s) => ({
+          calorieTarget: targets.kcal,
+          macroTargets: { protein: targets.protein, carbs: targets.carbs, fat: targets.fat },
+          targetHistory: [...s.targetHistory, { date: todayKey(), kcal: targets.kcal }],
+        })),
+
       // ---------- Kilo ----------
       logWeight: (date, kg) =>
         set((s) => ({ weights: { ...s.weights, [date]: Math.round(kg * 10) / 10 } })),
@@ -552,6 +585,7 @@ export const useStore = create<Store>()(
           data: {
             profile: s.profile,
             settings: s.settings,
+            programId: s.programId,
             cycleIndex: s.cycleIndex,
             sessions: s.sessions,
             foods: s.foods,
@@ -573,8 +607,9 @@ export const useStore = create<Store>()(
           if (!data || typeof data !== 'object') return { ok: false, error: 'Geçersiz JSON yapısı.' };
           const base = initialState();
           set({
-            profile: data.profile ?? base.profile,
+            profile: { ...base.profile, ...(data.profile ?? {}) },
             settings: { ...base.settings, ...(data.settings ?? {}) },
+            programId: getProgram(data.programId ?? DEFAULT_PROGRAM_ID).id,
             cycleIndex: typeof data.cycleIndex === 'number' ? data.cycleIndex : 0,
             sessions: Array.isArray(data.sessions) ? data.sessions : [],
             foods: { ...base.foods, ...(data.foods ?? {}) },
@@ -598,17 +633,26 @@ export const useStore = create<Store>()(
     }),
     {
       name: 'hipertrofi-store-v1',
-      version: 3,
+      version: 4,
       storage: createJSONStorage(() => AsyncStorage),
       /**
        * v3: öğün planı protein 165 g / yağ 72 g hedefine göre yeniden kuruldu,
        * kalan kalori pirinçten tamamlandı. Kullanıcı beslenme tarafına hiç dokunmadıysa
        * (günlük kaydı ve kalori ayarı yoksa) yeni varsayılanlar uygulanır;
        * dokunduysa mevcut planı bozmamak için olduğu gibi bırakılır.
+       * v4: profile cinsiyet/aktivite/hedef alanları ve program seçimi eklendi.
        */
       migrate: (persisted, version) => {
-        const state = persisted as Partial<State> | undefined;
+        let state = persisted as Partial<State> | undefined;
         if (!state) return persisted as Store;
+        if (version < 4) {
+          const base = initialState();
+          state = {
+            ...state,
+            profile: { ...base.profile, ...(state.profile ?? {}) },
+            programId: getProgram(state.programId ?? DEFAULT_PROGRAM_ID).id,
+          };
+        }
         if (version < 3) {
           const untouched =
             Object.keys(state.dayLogs ?? {}).length === 0 &&
@@ -629,7 +673,7 @@ export const useStore = create<Store>()(
             } as Store;
           }
         }
-        return persisted as Store;
+        return state as Store;
       },
       partialize: (s) => {
         const { hydrated, ...rest } = s;

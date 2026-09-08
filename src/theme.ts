@@ -42,8 +42,12 @@ export const macroColors = {
   fat: '#FBBF24',
 };
 
-/** Grafiklerde trapez, kullanıcının programındaki gibi sırt altında toplanır. */
-export const chartGroup = (group: string): string => (group === 'trapez' ? 'sirt' : group);
+/**
+ * Grafik grupları 8 ile sınırlı (palet bu sayıda doğrulandı):
+ * trapez sırtla, kalf bacakla birlikte sayılır; kalça kendi rengini alır.
+ */
+export const chartGroup = (group: string): string =>
+  group === 'trapez' ? 'sirt' : group === 'kalf' ? 'bacak' : group;
 
 /** Kas grubu → sabit renk slotu (yığın sırası da budur). */
 export const CHART_GROUP_ORDER = [
@@ -53,7 +57,7 @@ export const CHART_GROUP_ORDER = [
   'omuz',
   'biceps',
   'triceps',
-  'kalf',
+  'kalca',
   'onkol',
 ];
 
@@ -64,9 +68,10 @@ export const groupColors: Record<string, string> = {
   omuz: series[3],
   biceps: series[4],
   triceps: series[5],
-  kalf: series[6],
+  kalca: series[6],
   onkol: series[7],
   trapez: series[0],
+  kalf: series[2],
 };
 
 export const grid = '#212633';

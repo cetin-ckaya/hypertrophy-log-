@@ -185,14 +185,18 @@ export const IconButton = ({
   children,
   onPress,
   size = 38,
+  label,
 }: {
   children: ReactNode;
   onPress: () => void;
   size?: number;
+  label?: string;
 }) => (
   <Pressable
     onPress={onPress}
     hitSlop={8}
+    accessibilityRole="button"
+    accessibilityLabel={label}
     style={({ pressed }) => [
       styles.iconButton,
       { width: size, height: size, opacity: pressed ? 0.7 : 1 },

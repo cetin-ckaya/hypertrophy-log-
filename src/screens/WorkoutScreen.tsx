@@ -21,7 +21,7 @@ import {
   Screen,
   SectionTitle,
 } from '../components/ui';
-import { DAYS, EXERCISES, GROUP_NAMES, cycleDay } from '../data/program';
+import { EXERCISES, GROUP_NAMES, cycleDayOf, dayById, getProgram } from '../data/program';
 import { formatRelative } from '../logic/date';
 import {
   buildSuggestion,
@@ -50,6 +50,7 @@ const confirm = (title: string, message: string, onOk: () => void) => {
 
 export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
   const state = useStore();
+  const program = getProgram(state.programId);
   const active = state.activeSession;
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
   const [restDuration, setRestDuration] = useState(state.settings.restSeconds);
@@ -62,7 +63,7 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
   };
 
   if (!active) {
-    const day = cycleDay(state.cycleIndex);
+    const day = cycleDayOf(state.programId, state.cycleIndex);
     return (
       <Screen title="Antrenman" subtitle={`Sıradaki gün · ${day.name}`}>
         <Card>
@@ -86,9 +87,11 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
 
         <SectionTitle>Başka bir gün çalış</SectionTitle>
         <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
-          {['pull1', 'push1', 'legs', 'pull2', 'push2'].map((id) => (
-            <Chip key={id} label={DAYS[id].name} onPress={() => state.startWorkout(id)} />
-          ))}
+          {program.cycle
+            .filter((id: string, i: number) => program.days[id].kind === 'workout' && program.cycle.indexOf(id) === i)
+            .map((id: string) => (
+              <Chip key={id} label={program.days[id].name} onPress={() => state.startWorkout(id)} />
+            ))}
         </Row>
 
         <SectionTitle>Geçmiş antrenmanlar</SectionTitle>
@@ -104,7 +107,7 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
             .map((s) => (
               <Card key={s.id}>
                 <Row style={{ justifyContent: 'space-between' }}>
-                  <Text style={font.h3}>{DAYS[s.dayId]?.name ?? s.dayId}</Text>
+                  <Text style={font.h3}>{dayById(s.dayId)?.name ?? s.dayId}</Text>
                   <Text style={font.tiny}>{formatRelative(s.date)}</Text>
                 </Row>
                 <Text style={[font.small, font.num]}>
@@ -124,7 +127,7 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
     );
   }
 
-  const day = DAYS[active.dayId];
+  const day = dayById(active.dayId);
   const doneSets = active.exercises.reduce((sum, e) => sum + e.sets.filter((s) => s.done).length, 0);
   const totalSets = active.exercises.reduce((sum, e) => sum + e.sets.length, 0);
   const pct = totalSets > 0 ? doneSets / totalSets : 0;
@@ -161,7 +164,7 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
             ex.repMax,
             state.settings
           );
-          const planned = day?.exercises.find((p) => p.exerciseId === ex.exerciseId);
+          const planned = day?.exercises.find((x) => x.exerciseId === ex.exerciseId);
           const allDone = ex.sets.every((s) => s.done);
           const open = expanded[exIndex] ?? !allDone;
           const good = suggestion.kind === 'increase' || suggestion.kind === 'rep_progress';
@@ -283,6 +286,16 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
             </View>
           );
         })}
+
+        {day?.cardio ? (
+          <Card>
+            <Row gap={spacing.sm}>
+              <ClockIcon size={16} color={colors.cyan} />
+              <Label>Gün sonu kardiyo</Label>
+            </Row>
+            <Text style={font.body}>{day.cardio}</Text>
+          </Card>
+        ) : null}
 
         <Button
           title="Antrenmanı tamamla"

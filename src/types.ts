@@ -1,6 +1,6 @@
 export type MuscleGroup =
   | 'sirt' | 'gogus' | 'omuz' | 'biceps' | 'triceps'
-  | 'bacak' | 'onkol' | 'kalf' | 'trapez';
+  | 'bacak' | 'kalca' | 'onkol' | 'kalf' | 'trapez';
 
 export type ExerciseType = 'compound' | 'isolation';
 
@@ -22,10 +22,21 @@ export type PlannedExercise = {
 export type DayKind = 'workout' | 'rest';
 
 export type TrainingDay = {
-  id: string;          // 'pull1' | 'push1' | 'legs' | 'rest' | 'pull2' | 'push2'
+  id: string;
   name: string;
   kind: DayKind;
   exercises: PlannedExercise[];
+  /** Gün sonunda yapılacak kardiyo notu (örn. "Eğim 10 / Hız 5 · 20 dakika yürüyüş"). */
+  cardio?: string;
+};
+
+export type Program = {
+  id: string;
+  name: string;
+  description: string;
+  days: Record<string, TrainingDay>;
+  /** Döngü sırası — gün id'leri, 'rest' dahil. */
+  cycle: string[];
 };
 
 export type SetLog = {
@@ -115,8 +126,25 @@ export type Settings = {
   autoAdjustEnabled: boolean;
 };
 
+export type Sex = 'erkek' | 'kadin';
+export type ActivityKey = 'sedanter' | 'hafif' | 'orta' | 'cok';
+export type GoalKey = 'hacim' | 'koruma' | 'kesim';
+
 export type Profile = {
+  sex: Sex;
   age: number;
   heightCm: number;
   startWeightKg: number;
+  activity: ActivityKey;
+  goal: GoalKey;
+};
+
+export type EnergyTargets = {
+  bmr: number;
+  tdee: number;
+  kcal: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  weightKg: number;
 };

@@ -47,8 +47,14 @@ npm run build:web  # PWA çıktısı -> dist/
 ## Ne yapar
 
 ### Antrenman
-- **Döngüsel program:** Pull 1 → Push 1 → Legs → Dinlenme → Pull 2 → Push 2 → Dinlenme.
-  Antrenmanı tamamlayınca sıradaki güne otomatik geçer; ana ekrandan manuel de seçebilirsin.
+- **İki program, Ayarlar'dan seçilir:**
+  - *Hipertrofi · Push/Pull/Legs* — Pull 1 → Push 1 → Legs → Dinlenme → Pull 2 → Push 2 → Dinlenme,
+    tüm hareketlerde 6–8 tekrar.
+  - *Kalça ağırlıklı · 5 gün* — Kalça&Bacak → Sırt&Omuz → Kalça&Bacak (izolasyon) → Dinlenme →
+    Kol&Sırt → Kalça&Bacak → Dinlenme; her günün sonunda "Eğim 10 / Hız 5 · 20 dakika yürüyüş"
+    kartı çıkar. Kendi tekrar aralıklarıyla gelir (4×8-10, 3×12 gibi).
+  - Program değiştirmek döngüyü başa alır; geçmiş kayıtlar ve rekorlar korunur.
+- **Döngü:** antrenmanı tamamlayınca sıradaki güne otomatik geçer; ana ekrandan manuel de seçebilirsin.
 - Her hareket için set set **ağırlık (kg)** ve **tekrar** girişi; büyük +/− butonları ve numerik klavye.
 - **Geçen sefer aynı antrenmanda ne yaptığın** her hareketin hemen altında görünür
   (örn. `107,5 kg × 6, 107,5 kg × 5`).
@@ -75,6 +81,27 @@ npm run build:web  # PWA çıktısı -> dist/
 - Gramajları o güne özel düzenleyebilir, besin ekleyip çıkarabilirsin;
   "Plan" sekmesinden varsayılan planı değiştirirsin (geçmiş günler korunur).
 - 18 besinlik veritabanı (100 g / 100 ml, çiğ-kuru ölçü) + kendi besinini ekleme.
+
+### Profilden otomatik kalori ve makro hesabı
+
+Ayarlar → Profil'de **cinsiyet, yaş, boy, kilo, aktivite seviyesi ve hedef** (hacim / koruma /
+kesim) seçilir. Uygulama **Mifflin-St Jeor** ile bazal metabolizmayı, aktivite katsayısıyla
+günlük harcamayı ve hedefe göre başlangıç kalorisini hesaplar:
+
+| | Formül |
+|---|---|
+| BMR (erkek) | 10 × kg + 6,25 × cm − 5 × yaş + 5 |
+| BMR (kadın) | 10 × kg + 6,25 × cm − 5 × yaş − 161 |
+| Harcama | BMR × 1,2 / 1,375 / 1,55 / 1,725 (hareketsiz → çok aktif) |
+| Hedef kalori | Harcama + 350 (hacim) · 0 (koruma) · −400 (kesim) |
+| Protein | 2,0 g/kg (hacim, koruma) · 2,2 g/kg (kesim) |
+| Yağ | Kalorinin %25–28'i, en az 0,6 g/kg |
+| Karbonhidrat | Kalan kalori |
+
+Hesap, kilo girişin varsa **son 7 günün ortalaması** üzerinden yapılır. Sonuç bir kart olarak
+gösterilir ve **"Hesaplanan hedefi uygula"** dediğinde geçerli olur — mevcut hedefin sessizce
+değişmez. Uyguladıktan sonra aşağıdaki haftalık otomatik ayar bu başlangıç değeri üzerinden
+çalışmaya devam eder.
 
 ### Kilo takibi ve otomatik kalori ayarı
 - Her sabah kilo girişi, **7 günlük hareketli ortalama** ve grafik (günlük nokta + ortalama çizgisi).
@@ -138,9 +165,9 @@ servis çalışanı ile çevrimdışı PWA, GitHub Actions ile Pages'e otomatik 
 
 ```
 App.tsx                  sekme kabuğu
-src/data/program.ts      hareketler, günler, döngü
+src/data/program.ts      hareket kataloğu, programlar ve döngüleri
 src/data/foods.ts        besin veritabanı ve varsayılan plan
-src/logic/               progression, beslenme, kilo/otomatik ayar, tarih yardımcıları
+src/logic/               progression, beslenme, kilo/otomatik ayar, enerji hesabı, tarih
 src/store/store.ts       kalıcı state ve tüm aksiyonlar
 src/components/          ortak arayüz bileşenleri ve grafikler
 src/screens/             Ana, Antrenman, Beslenme, Kilo, İstatistik, Ayarlar

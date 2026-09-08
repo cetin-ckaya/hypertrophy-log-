@@ -19,7 +19,7 @@ import {
   Sparkline,
   NumberStepper,
 } from '../components/ui';
-import { CYCLE, DAYS, cycleDay } from '../data/program';
+import { cycleDayOf, dayById, getProgram } from '../data/program';
 import { formatLong, todayKey } from '../logic/date';
 import { eatenMacros } from '../logic/nutrition';
 import { sessionSetCount, sessionVolume } from '../logic/progression';
@@ -34,7 +34,8 @@ const signed = (n: number, digits = 2) =>
 export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
   const state = useStore();
   const today = todayKey();
-  const day = cycleDay(state.cycleIndex);
+  const program = getProgram(state.programId);
+  const day = cycleDayOf(state.programId, state.cycleIndex);
   const [weightDraft, setWeightDraft] = useState<number>(
     state.weights[today] ?? latestAverage(state.weights) ?? state.profile.startWeightKg
   );
@@ -68,7 +69,7 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
       title="Hipertrofi"
       subtitle={formatLong(today)}
       right={
-        <IconButton onPress={() => go('settings')}>
+        <IconButton onPress={() => go('settings')} label="Ayarlar">
           <GearIcon size={18} color={colors.textDim} />
         </IconButton>
       }
@@ -78,7 +79,7 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
       {state.activeSession ? (
         <Card tone="primary">
           <Label>Devam eden antrenman</Label>
-          <Text style={font.h2}>{DAYS[state.activeSession.dayId]?.name}</Text>
+          <Text style={font.h2}>{dayById(state.activeSession.dayId)?.name}</Text>
           <Button title="Antrenmana dön" onPress={() => go('workout')} size="lg" />
         </Card>
       ) : null}
@@ -88,11 +89,11 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
         <Text style={styles.heroTitle}>{day.name}</Text>
         <Text style={styles.heroSub}>
           {day.kind === 'workout'
-            ? `${day.exercises.length} hareket · ${day.exercises.reduce((s, e) => s + e.sets, 0)} work-set · Döngü ${state.cycleIndex + 1}/${CYCLE.length}`
-            : `Toparlanma günü · Döngü ${state.cycleIndex + 1}/${CYCLE.length}`}
+            ? `${day.exercises.length} hareket · ${day.exercises.reduce((sum, e) => sum + e.sets, 0)} work-set · Döngü ${state.cycleIndex + 1}/${program.cycle.length}`
+            : `Toparlanma günü · Döngü ${state.cycleIndex + 1}/${program.cycle.length}`}
         </Text>
         <Row gap={5} style={{ marginTop: spacing.lg }}>
-          {CYCLE.map((_, i) => (
+          {program.cycle.map((_: string, i: number) => (
             <View
               key={i}
               style={[styles.dot, i === state.cycleIndex ? styles.dotOn : null]}
@@ -233,7 +234,7 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
             <Label>Son antrenman</Label>
             <Text style={font.tiny}>{lastSession.date}</Text>
           </Row>
-          <Text style={font.h3}>{DAYS[lastSession.dayId]?.name}</Text>
+          <Text style={font.h3}>{dayById(lastSession.dayId)?.name}</Text>
           <Row gap={spacing.md}>
             <Text style={[font.small, font.num]}>{sessionSetCount(lastSession)} set</Text>
             <Text style={[font.small, font.num]}>
@@ -246,10 +247,10 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
       <SectionTitle>Günü manuel seç</SectionTitle>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <Row gap={spacing.sm}>
-          {CYCLE.map((id, i) => (
+          {program.cycle.map((id: string, i: number) => (
             <Chip
               key={`${id}-${i}`}
-              label={`${i + 1}. ${DAYS[id].name}`}
+              label={`${i + 1}. ${program.days[id].name}`}
               active={state.cycleIndex === i}
               onPress={() => state.setCycleIndex(i)}
             />
