@@ -1,20 +1,45 @@
 import React, { useState } from 'react';
-import { Platform, Switch, Text, View } from 'react-native';
+import { Platform, Pressable, Switch, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
-import { Button, Card, Field, NumberStepper, Row, Screen, SectionTitle } from '../components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  Chip,
+  Field,
+  Label,
+  NumberStepper,
+  Row,
+  Screen,
+  SectionTitle,
+  StatTile,
+} from '../components/ui';
+import { ChevronLeftIcon } from '../components/icons';
+import { PROGRAMS } from '../data/program';
 import { todayKey } from '../logic/date';
+import { ACTIVITIES, GOALS, SEXES, activityOf, computeTargets, goalOf } from '../logic/energy';
+import { latestAverage } from '../logic/weight';
 import { useStore } from '../store/store';
-import { colors, font, spacing } from '../theme';
+import { colors, font, macroColors, spacing } from '../theme';
+import { TabKey } from '../navigation';
 
-export const SettingsScreen = () => {
+export const SettingsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
   const state = useStore();
   const [status, setStatus] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [importText, setImportText] = useState('');
   const [showImport, setShowImport] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+
+  const avgWeight = latestAverage(state.weights);
+  const targets = computeTargets(state.profile, avgWeight ?? state.profile.startWeightKg);
+  const applied =
+    state.calorieTarget === targets.kcal &&
+    state.macroTargets.protein === targets.protein &&
+    state.macroTargets.carbs === targets.carbs &&
+    state.macroTargets.fat === targets.fat;
 
   const json = () => JSON.stringify(state.exportPayload(), null, 2);
   const fileName = `hipertrofi-yedek-${todayKey()}.json`;
@@ -77,7 +102,47 @@ export const SettingsScreen = () => {
   };
 
   return (
-    <Screen title="Ayarlar" subtitle="Program, beslenme ve yedekleme">
+    <Screen
+      kicker="Ayarlar"
+      title="Program ve profil"
+      left={
+        <Pressable onPress={() => go('stats')} hitSlop={10}>
+          <ChevronLeftIcon size={20} color={colors.ink} />
+        </Pressable>
+      }
+    >
+      <SectionTitle>Program</SectionTitle>
+      {Object.values(PROGRAMS).map((program) => {
+        const active = state.programId === program.id;
+        return (
+          <Card key={program.id} tone={active ? 'accent' : undefined}>
+            <Row style={{ justifyContent: 'space-between' }}>
+              <Text style={[font.h3, { flex: 1 }]}>{program.name}</Text>
+              {active ? <Badge label="AKTİF" /> : null}
+            </Row>
+            <Text style={font.small}>{program.description}</Text>
+            <Text style={font.tiny}>
+              {program.cycle
+                .map((id) => program.days[id].name.replace(/^Gün \d+ · /, ''))
+                .join(' → ')}
+            </Text>
+            {!active ? (
+              <Button
+                title="Bu programa geç"
+                variant="ghost"
+                onPress={() => {
+                  state.setProgram(program.id);
+                  setStatus({
+                    kind: 'ok',
+                    text: `${program.name} etkin. Döngü başa alındı; geçmiş kayıtların korunuyor.`,
+                  });
+                }}
+              />
+            ) : null}
+          </Card>
+        );
+      })}
+
       <SectionTitle>Antrenman</SectionTitle>
       <Card>
         <Text style={font.small}>Setler arası dinlenme süresi</Text>
@@ -129,7 +194,7 @@ export const SettingsScreen = () => {
           <Switch
             value={state.settings.autoAdjustEnabled}
             onValueChange={(v) => state.updateSettings({ autoAdjustEnabled: v })}
-            trackColor={{ true: colors.primary, false: colors.border }}
+            trackColor={{ true: colors.accent, false: colors.ruleLight }}
           />
         </Row>
 
@@ -163,7 +228,19 @@ export const SettingsScreen = () => {
 
       <SectionTitle>Profil</SectionTitle>
       <Card>
-        <Text style={font.small}>Yaş</Text>
+        <Label>Cinsiyet</Label>
+        <Row gap={spacing.sm}>
+          {SEXES.map((o) => (
+            <Chip
+              key={o.key}
+              label={o.label}
+              active={state.profile.sex === o.key}
+              onPress={() => state.updateProfile({ sex: o.key })}
+            />
+          ))}
+        </Row>
+
+        <Text style={[font.small, { marginTop: spacing.sm }]}>Yaş</Text>
         <NumberStepper
           value={state.profile.age}
           onChange={(v) => state.updateProfile({ age: Math.round(v) })}
@@ -172,6 +249,7 @@ export const SettingsScreen = () => {
           max={100}
           decimals={0}
         />
+
         <Text style={[font.small, { marginTop: spacing.sm }]}>Boy</Text>
         <NumberStepper
           value={state.profile.heightCm}
@@ -182,6 +260,7 @@ export const SettingsScreen = () => {
           decimals={0}
           suffix="cm"
         />
+
         <Text style={[font.small, { marginTop: spacing.sm }]}>Başlangıç kilosu</Text>
         <NumberStepper
           value={state.profile.startWeightKg}
@@ -192,6 +271,86 @@ export const SettingsScreen = () => {
           decimals={1}
           suffix="kg"
         />
+
+        <Label style={{ marginTop: spacing.md }}>Aktivite seviyesi</Label>
+        <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
+          {ACTIVITIES.map((a) => (
+            <Chip
+              key={a.key}
+              label={a.label}
+              active={state.profile.activity === a.key}
+              onPress={() => state.updateProfile({ activity: a.key })}
+            />
+          ))}
+        </Row>
+        <Text style={font.tiny}>{activityOf(state.profile.activity).hint}</Text>
+
+        <Label style={{ marginTop: spacing.md }}>Hedef</Label>
+        <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
+          {GOALS.map((g) => (
+            <Chip
+              key={g.key}
+              label={g.label}
+              active={state.profile.goal === g.key}
+              onPress={() => state.updateProfile({ goal: g.key })}
+            />
+          ))}
+        </Row>
+        <Text style={font.tiny}>{goalOf(state.profile.goal).hint}</Text>
+      </Card>
+
+      <SectionTitle>Hesaplanan kalori ve makrolar</SectionTitle>
+      <Card tone="accent">
+        <Text style={font.small}>
+          Mifflin-St Jeor formülüyle bazal metabolizman, aktivite katsayınla günlük harcaman ve
+          hedefine göre başlangıç kalorin hesaplanır. Uyguladıktan sonra haftalık kilo ortalamana
+          göre otomatik ayar devreye girer.
+        </Text>
+
+        <Row gap={spacing.sm}>
+          <StatTile label="BMR" value={`${targets.bmr}`} sub="kcal / gün" />
+          <StatTile label="Harcama" value={`${targets.tdee}`} sub={`× ${activityOf(state.profile.activity).factor}`} />
+          <StatTile
+            label="Hedef"
+            value={`${targets.kcal}`}
+            sub={`${goalOf(state.profile.goal).kcalDelta >= 0 ? '+' : '−'}${Math.abs(goalOf(state.profile.goal).kcalDelta)} kcal`}
+            color={colors.primary}
+          />
+        </Row>
+
+        <Row gap={spacing.sm}>
+          <StatTile label="Protein" value={`${targets.protein} g`} color={macroColors.protein} />
+          <StatTile label="Karb" value={`${targets.carbs} g`} color={macroColors.carbs} />
+          <StatTile label="Yağ" value={`${targets.fat} g`} color={macroColors.fat} />
+        </Row>
+
+        <Text style={font.tiny}>
+          Hesap {targets.weightKg.toFixed(1).replace('.', ',')} kg üzerinden yapıldı
+          {avgWeight === null ? ' (başlangıç kilosu)' : ' (son 7 günün ortalaması)'}.
+        </Text>
+
+        {applied ? (
+          <Text style={{ color: colors.success, fontSize: 13, fontWeight: '700' }}>
+            Şu anki hedeflerin bu hesapla aynı ✓
+          </Text>
+        ) : (
+          <>
+            <Text style={font.small}>
+              Şu anki hedefin {state.calorieTarget} kcal · P {state.macroTargets.protein} · K{' '}
+              {state.macroTargets.carbs} · Y {state.macroTargets.fat}
+            </Text>
+            <Button
+              title="Hesaplanan hedefi uygula"
+              onPress={() => {
+                state.applyEnergyTargets(targets);
+                setStatus({
+                  kind: 'ok',
+                  text: `Hedef ${targets.kcal} kcal olarak ayarlandı. Beslenme ekranından planı bu hedefe göre dengeleyebilirsin.`,
+                });
+              }}
+            />
+          </>
+        )}
       </Card>
 
       <SectionTitle>Yedekleme</SectionTitle>
@@ -200,11 +359,11 @@ export const SettingsScreen = () => {
           Tüm veriler cihazında saklanır. Düzenli olarak JSON yedeği almanı öneririm.
         </Text>
         <Button title="JSON olarak dışa aktar" onPress={exportFile} />
-        <Button title="JSON'u panoya kopyala" variant="soft" onPress={copyJson} />
-        <Button title="Dosyadan geri yükle" variant="soft" onPress={importFromFile} />
+        <Button title="JSON'u panoya kopyala" variant="ghost" onPress={copyJson} />
+        <Button title="Dosyadan geri yükle" variant="ghost" onPress={importFromFile} />
         <Button
           title={showImport ? 'Yapıştırma alanını kapat' : 'JSON yapıştırarak geri yükle'}
-          variant="soft"
+          variant="ghost"
           onPress={() => setShowImport(!showImport)}
         />
         {showImport ? (
@@ -217,7 +376,7 @@ export const SettingsScreen = () => {
             />
             <Button
               title="Geri yükle"
-              variant="warning"
+              variant="primary"
               onPress={() => {
                 const result = state.importPayload(importText);
                 setStatus(
@@ -246,7 +405,7 @@ export const SettingsScreen = () => {
       </Card>
 
       <SectionTitle>Tehlikeli bölge</SectionTitle>
-      <Card tone="danger">
+      <Card tone="accent">
         <Text style={font.small}>
           Tüm antrenman, beslenme ve kilo kayıtları silinir. Önce yedek almayı unutma.
         </Text>
@@ -264,13 +423,13 @@ export const SettingsScreen = () => {
             />
             <Button
               title="Vazgeç"
-              variant="soft"
+              variant="ghost"
               style={{ flex: 1 }}
               onPress={() => setConfirmReset(false)}
             />
           </Row>
         ) : (
-          <Button title="Tüm verileri sıfırla" variant="soft" onPress={() => setConfirmReset(true)} />
+          <Button title="Tüm verileri sıfırla" variant="ghost" onPress={() => setConfirmReset(true)} />
         )}
       </Card>
       <View style={{ height: 8 }} />

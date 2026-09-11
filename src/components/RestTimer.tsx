@@ -1,19 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Circle } from 'react-native-svg';
 
 import { mmss } from '../logic/date';
-import { colors, font, radius, restGradient, spacing } from '../theme';
+import { colors, font, fonts, rules, spacing } from '../theme';
 
-export const RestTimer = ({
+export const RestBar = ({
   endsAt,
-  duration,
+  onStart,
   onStop,
   onExtend,
 }: {
-  endsAt: number;
-  duration: number;
+  endsAt: number | null;
+  onStart: () => void;
   onStop: () => void;
   onExtend: (seconds: number) => void;
 }) => {
@@ -21,65 +19,46 @@ export const RestTimer = ({
   const fired = useRef(false);
 
   useEffect(() => {
+    if (endsAt === null) return;
     const t = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(t);
-  }, []);
+  }, [endsAt]);
 
-  const remaining = Math.max(0, (endsAt - now) / 1000);
+  const remaining = endsAt === null ? 0 : Math.max(0, (endsAt - now) / 1000);
 
   useEffect(() => {
+    if (endsAt === null) return;
     if (remaining <= 0 && !fired.current) {
       fired.current = true;
       if (Platform.OS !== 'web') Vibration.vibrate([0, 300, 150, 300]);
     }
     if (remaining > 0) fired.current = false;
-  }, [remaining]);
+  }, [remaining, endsAt]);
 
-  const pct = duration > 0 ? Math.max(0, Math.min(1, remaining / duration)) : 0;
-  const done = remaining <= 0;
-  const size = 52;
-  const r = 22;
-  const c = 2 * Math.PI * r;
+  const running = endsAt !== null && remaining > 0;
+  const done = endsAt !== null && remaining <= 0;
 
   return (
-    <LinearGradient
-      colors={restGradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.wrap, done ? { borderColor: colors.success } : null]}
-    >
-      <Svg width={size} height={size}>
-        <Circle cx={size / 2} cy={size / 2} r={r} stroke="#2E3B55" strokeWidth={4.5} fill="none" />
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          stroke={done ? colors.success : colors.primary}
-          strokeWidth={4.5}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={`${c}`}
-          strokeDashoffset={c * (1 - pct)}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
-      </Svg>
-
-      <View style={{ flex: 1 }}>
-        <Text style={[font.label, { color: '#8FA6CC' }]}>
-          {done ? 'Dinlenme bitti' : 'Dinlenme'}
-        </Text>
-        <Text style={[styles.time, done ? { color: colors.success } : null]}>{mmss(remaining)}</Text>
-      </View>
-
-      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-        <Pressable style={styles.btn} onPress={() => onExtend(30)}>
-          <Text style={styles.btnText}>+30 sn</Text>
+    <View style={styles.wrap}>
+      <Text style={font.label}>Dinlenme</Text>
+      <Text style={[styles.time, done ? { color: colors.accent } : null]}>
+        {endsAt === null ? '—:—' : mmss(remaining)}
+      </Text>
+      {running || done ? (
+        <>
+          <Pressable style={styles.btn} onPress={() => onExtend(30)}>
+            <Text style={styles.btnText}>+30 sn</Text>
+          </Pressable>
+          <Pressable style={[styles.btn, styles.btnInk]} onPress={onStop}>
+            <Text style={[styles.btnText, { color: colors.onAccent }]}>Bitir</Text>
+          </Pressable>
+        </>
+      ) : (
+        <Pressable style={styles.btn} onPress={onStart}>
+          <Text style={styles.btnText}>Başlat</Text>
         </Pressable>
-        <Pressable style={[styles.btn, styles.primary]} onPress={onStop}>
-          <Text style={[styles.btnText, { color: '#fff' }]}>Bitir</Text>
-        </Pressable>
-      </View>
-    </LinearGradient>
+      )}
+    </View>
   );
 };
 
@@ -87,30 +66,31 @@ const styles = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: '#2A3A5C',
-    padding: spacing.md,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    borderBottomWidth: rules.light,
+    borderBottomColor: colors.ruleLight,
   },
   time: {
-    fontSize: 27,
-    fontWeight: '800',
-    color: colors.text,
-    letterSpacing: -0.8,
-    marginTop: 1,
+    flex: 1,
+    fontFamily: fonts.black,
+    fontSize: 22,
+    color: colors.ink,
     fontVariant: ['tabular-nums'],
   },
   btn: {
-    height: 42,
-    paddingHorizontal: 14,
-    borderRadius: radius.md,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    alignItems: 'center',
+    minHeight: 40,
+    paddingHorizontal: 12,
     justifyContent: 'center',
+    borderWidth: rules.strong,
+    borderColor: colors.ink,
   },
-  primary: { backgroundColor: colors.primary },
-  btnText: { color: '#CBD7EC', fontWeight: '800', fontSize: 13 },
+  btnInk: { backgroundColor: colors.ink },
+  btnText: {
+    fontFamily: fonts.extra,
+    fontSize: 11,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    color: colors.ink,
+  },
 });

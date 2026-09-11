@@ -42,12 +42,12 @@ const sw = readFileSync(swPath, 'utf8')
 writeFileSync(swPath, sw);
 
 const head = `
-    <meta name="theme-color" content="#0B0E14" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#F3F2F2" />
+    <meta name="color-scheme" content="light" />
     <meta name="description" content="Kişisel antrenman ve beslenme takibi." />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Hipertrofi" />
     <link rel="manifest" href="${base}manifest.webmanifest" />
     <link rel="apple-touch-icon" href="${base}icons/apple-touch-icon.png" />
@@ -55,7 +55,7 @@ const head = `
     <style>
       html,
       body {
-        background-color: #0B0E14;
+        background-color: #F3F2F2;
       }
     </style>
     <script>

@@ -6,8 +6,8 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "hipertrofi",
-    "userInterfaceStyle": "dark",
-    "backgroundColor": "#0B0E14",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#F3F2F2",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.hypertrophylog.app"
@@ -15,7 +15,7 @@
     "android": {
       "package": "com.hypertrophylog.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0B0E14",
+        "backgroundColor": "#F3F2F2",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

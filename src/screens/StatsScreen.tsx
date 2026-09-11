@@ -1,26 +1,39 @@
 import React, { useMemo, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { BarChart, LineChart, StackedBarChart } from '../components/charts';
-import { Card, Chip, Row, Screen, SectionTitle, StatTile } from '../components/ui';
-import { EXERCISES, GROUP_NAMES } from '../data/program';
-import { formatShort } from '../logic/date';
-import { eatenMacros } from '../logic/nutrition';
+import { AdjustmentCard } from '../components/AdjustmentCard';
+import { BarChart, LineChart } from '../components/charts';
 import {
-  exerciseProgress,
-  personalRecords,
-  sessionVolume,
-  trimNum,
-  weekStart,
-  weeklyVolume,
-} from '../logic/progression';
-import { latestAverage, weightSeries } from '../logic/weight';
+  Button,
+  Chip,
+  DataRow,
+  Grid,
+  Label,
+  NumberStepper,
+  Row,
+  Screen,
+  Section,
+  StatTile,
+} from '../components/ui';
+import { EXERCISES, GROUP_NAMES } from '../data/program';
+import { formatRelative, formatShort, todayKey } from '../logic/date';
+import { eatenMacros } from '../logic/nutrition';
+import { exerciseProgress, sessionVolume, weekStart, weeklyVolume } from '../logic/progression';
+import { latestAverage, sortedWeights, weeklyTrend, weightSeries } from '../logic/weight';
 import { useStore } from '../store/store';
-import { CHART_GROUP_ORDER, chartGroup, colors, font, groupColors, series, spacing } from '../theme';
+import { CHART_GROUP_ORDER, chartGroup, colors, font, fonts, rules, spacing } from '../theme';
+import { TabKey } from '../navigation';
 
-export const StatsScreen = () => {
+const signed = (n: number, d = 2) =>
+  `${n >= 0 ? '+' : '−'}${Math.abs(n).toFixed(d).replace('.', ',')}`;
+
+export const StatsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
   const state = useStore();
+  const today = todayKey();
   const completed = state.sessions.filter((s) => s.completedAt);
+  const [weightDraft, setWeightDraft] = useState<number>(
+    state.weights[today] ?? latestAverage(state.weights) ?? state.profile.startWeightKg
+  );
 
   const loggedExerciseIds = useMemo(() => {
     const ids = new Set<string>();
@@ -40,14 +53,25 @@ export const StatsScreen = () => {
   );
 
   const volumes = useMemo(() => weeklyVolume(state.sessions), [state.sessions]);
-  const recentVolumes = volumes.slice(-10);
-  const usedGroups = useMemo(() => {
-    const set = new Set<string>();
-    volumes.forEach((v) => Object.keys(v.byGroup).forEach((g) => set.add(chartGroup(g))));
-    return CHART_GROUP_ORDER.filter((g) => set.has(g));
-  }, [volumes]);
+  const lastWeek = volumes[volumes.length - 1];
+  const groupBars = useMemo(() => {
+    if (!lastWeek) return [];
+    const totals = new Map<string, number>();
+    Object.entries(lastWeek.byGroup).forEach(([g, v]) => {
+      const key = chartGroup(g);
+      totals.set(key, (totals.get(key) ?? 0) + v);
+    });
+    return CHART_GROUP_ORDER.filter((g) => (totals.get(g) ?? 0) > 0).map((g) => ({
+      label: GROUP_NAMES[g],
+      value: totals.get(g) ?? 0,
+    }));
+  }, [lastWeek]);
 
-  const prs = useMemo(() => personalRecords(state.sessions), [state.sessions]);
+  const weights = weightSeries(state.weights);
+  const entries = sortedWeights(state.weights);
+  const avg = latestAverage(state.weights);
+  const trend = weeklyTrend(state.weights);
+  const totalVolume = completed.reduce((sum, s) => sum + sessionVolume(s), 0);
 
   const nutritionWeeks = useMemo(() => {
     const map = new Map<string, { total: number; days: number; full: number }>();
@@ -69,191 +93,185 @@ export const StatsScreen = () => {
   const loggedDays = Object.values(state.dayLogs).filter((l) => l.meals.some((m) => m.eaten));
   const fullDays = loggedDays.filter((l) => l.meals.every((m) => m.eaten));
   const adherence = loggedDays.length > 0 ? (fullDays.length / loggedDays.length) * 100 : 0;
-
-  const weights = weightSeries(state.weights);
-  const totalVolume = completed.reduce((sum, s) => sum + sessionVolume(s), 0);
+  const weighedToday = state.weights[today] !== undefined;
 
   return (
-    <Screen title="İstatistikler" subtitle="İlerleme, hacim ve rekorlar">
-      <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
-        <StatTile label="ANTRENMAN" value={String(completed.length)} sub="tamamlanan" />
-        <StatTile
-          label="TOPLAM HACİM"
-          value={
-            totalVolume >= 10000
-              ? `${Math.round(totalVolume / 1000)}b kg`
-              : `${Math.round(totalVolume).toLocaleString('tr-TR')} kg`
-          }
-          sub="set × tekrar × kg"
-        />
-        <StatTile
-          label="GÜNCEL KİLO"
-          value={
-            latestAverage(state.weights) === null
-              ? '—'
-              : `${(latestAverage(state.weights) as number).toFixed(1).replace('.', ',')} kg`
-          }
-          sub="7 gün ort."
-        />
-      </Row>
+    <Screen kicker="İstatistik" title={`${completed.length} antrenman · ${entries.length} ölçüm`}>
+      {state.pendingAdjustment ? <AdjustmentCard /> : null}
 
-      <SectionTitle>Hareket ilerlemesi</SectionTitle>
-      {loggedExerciseIds.length === 0 ? (
-        <Card>
-          <Text style={font.small}>
-            Antrenman kaydettikçe her hareketin ağırlık ve tahmini 1RM grafiği burada oluşur.
-          </Text>
-        </Card>
-      ) : (
-        <>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <Row gap={spacing.sm}>
-              {loggedExerciseIds.map((id) => (
-                <Chip
-                  key={id}
-                  label={EXERCISES[id]?.name ?? id}
-                  active={activeExercise === id}
-                  color={groupColors[EXERCISES[id]?.group ?? 'sirt']}
-                  onPress={() => setExerciseId(id)}
+      <Section strong={false} style={{ borderTopWidth: 0 }}>
+        <Row style={{ justifyContent: 'space-between', alignItems: 'baseline' }} gap={spacing.md}>
+          <Text style={font.h3}>Kilo · günlük ve 7 günlük ortalama</Text>
+        </Row>
+        <Text style={[font.small, font.num]}>
+          {state.profile.startWeightKg.toFixed(1).replace('.', ',')} →{' '}
+          {entries.length ? entries[entries.length - 1].weight.toFixed(1).replace('.', ',') : '—'} kg · ort.{' '}
+          {avg === null ? '—' : avg.toFixed(1).replace('.', ',')} kg
+        </Text>
+        <LineChart
+          labels={weights.map((w) => formatShort(w.date))}
+          unit="kg"
+          decimals={1}
+          height={200}
+          series={[
+            { name: 'Günlük', color: colors.faintInk, values: weights.map((w) => w.weight) },
+            { name: '7 günlük ortalama', color: colors.accent, values: weights.map((w) => w.average) },
+          ]}
+        />
+      </Section>
+
+      <Section>
+        <Text style={font.h3}>Sabah kilosu</Text>
+        <Row gap={spacing.sm}>
+          <View style={{ flex: 1 }}>
+            <NumberStepper
+              value={state.weights[today] ?? weightDraft}
+              onChange={(v) => {
+                setWeightDraft(v);
+                if (weighedToday) state.logWeight(today, v);
+              }}
+              step={0.1}
+              min={30}
+              max={250}
+              decimals={1}
+              suffix="kg"
+            />
+          </View>
+          <Button
+            title={weighedToday ? 'Güncelle' : 'Kaydet'}
+            variant="ink"
+            onPress={() => state.logWeight(today, state.weights[today] ?? weightDraft)}
+          />
+        </Row>
+        <Text style={font.small}>
+          {weighedToday
+            ? `Bugün girildi · ${state.weights[today].toFixed(1).replace('.', ',')} kg`
+            : 'Bugün girilmedi — aç karnına, tuvaletten sonra ölç.'}
+          {trend.changeKg !== null ? ` · haftalık ${signed(trend.changeKg)} kg` : ''}
+        </Text>
+        {entries.length > 0 ? (
+          <View style={{ marginTop: spacing.sm }}>
+            {entries
+              .slice()
+              .reverse()
+              .slice(0, 10)
+              .map((e) => (
+                <DataRow
+                  key={e.date}
+                  label={formatRelative(e.date)}
+                  value={`${e.weight.toFixed(1).replace('.', ',')} kg`}
+                  strong
                 />
               ))}
-            </Row>
-          </ScrollView>
-          <Card>
-            <Text style={font.h3}>{EXERCISES[activeExercise ?? '']?.name ?? '—'}</Text>
-            <Text style={font.small}>
-              En ağır work-set ve Epley tahmini 1RM (ağırlık × (1 + tekrar / 30)) — ikisi de kg.
-            </Text>
+          </View>
+        ) : null}
+      </Section>
+
+      <Section>
+        <Text style={font.h3}>Haftalık hacim · kas grubu</Text>
+        <Text style={font.small}>
+          {lastWeek ? `${formatShort(lastWeek.week)} haftası` : 'Veri yok'} · hacim = set × tekrar × ağırlık
+        </Text>
+        <BarChart data={groupBars} formatValue={(v) => `${Math.round(v / 1000)}b`} height={170} />
+      </Section>
+
+      <Section>
+        <Text style={font.h3}>Tah. 1RM · hareket</Text>
+        {loggedExerciseIds.length === 0 ? (
+          <Text style={font.small}>Antrenman kaydettikçe hareket grafikleri burada oluşur.</Text>
+        ) : (
+          <>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <Row gap={spacing.sm}>
+                {loggedExerciseIds.map((id) => (
+                  <Chip
+                    key={id}
+                    label={EXERCISES[id]?.name ?? id}
+                    active={activeExercise === id}
+                    onPress={() => setExerciseId(id)}
+                  />
+                ))}
+              </Row>
+            </ScrollView>
             <LineChart
               labels={progress.map((p) => formatShort(p.date))}
               unit="kg"
               decimals={1}
+              height={170}
               series={[
-                { name: 'Ağırlık', color: series[0], values: progress.map((p) => p.weight) },
-                { name: 'Tahmini 1RM', color: series[1], values: progress.map((p) => p.e1rm) },
+                { name: 'Ağırlık', color: colors.faintInk, values: progress.map((p) => p.weight) },
+                { name: 'Tah. 1RM', color: colors.accent, values: progress.map((p) => p.e1rm) },
               ]}
             />
-          </Card>
-        </>
-      )}
+          </>
+        )}
+      </Section>
 
-      <SectionTitle>Haftalık hacim — kas grubu bazında</SectionTitle>
-      <Card>
-        <Text style={font.small}>
-          Hafta başlangıcı pazartesi. Hacim = set × tekrar × ağırlık. Trapez, programındaki gibi
-          sırt altında toplanır.
-        </Text>
-        <StackedBarChart
-          data={recentVolumes.map((v) => ({
-            label: formatShort(v.week),
-            parts: usedGroups.map((g) => ({
-              key: GROUP_NAMES[g],
-              value: Object.entries(v.byGroup)
-                .filter(([k]) => chartGroup(k) === g)
-                .reduce((sum, [, val]) => sum + val, 0),
-              color: groupColors[g],
-            })),
-          }))}
-          legend={usedGroups.map((g) => ({ name: GROUP_NAMES[g], color: groupColors[g] }))}
-          formatValue={(v) => `${Math.round(v).toLocaleString('tr-TR')} kg`}
-        />
-      </Card>
-
-      <SectionTitle>Kişisel rekorlar</SectionTitle>
-      {prs.length === 0 ? (
-        <Card>
-          <Text style={font.small}>Henüz rekor yok.</Text>
-        </Card>
-      ) : (
-        <Card>
-          {prs.map((pr) => (
-            <View key={pr.exerciseId} style={{ paddingVertical: 8 }}>
-              <Row style={{ justifyContent: 'space-between' }}>
-                <Row gap={6} style={{ flex: 1 }}>
-                  <View
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: groupColors[pr.group],
-                    }}
-                  />
-                  <Text style={[font.body, { flex: 1 }]}>{pr.name}</Text>
-                </Row>
-                <Text style={[font.body, { fontWeight: '800' }]}>
-                  {trimNum(pr.maxWeight)} kg × {pr.maxWeightReps}
-                </Text>
-              </Row>
-              <Text style={font.tiny}>
-                Tahmini 1RM {pr.bestE1RM.toFixed(1).replace('.', ',')} kg · {pr.bestE1RMDate}
-              </Text>
-            </View>
-          ))}
-        </Card>
-      )}
-
-      <SectionTitle>Beslenme</SectionTitle>
-      <Row gap={spacing.sm}>
-        <StatTile
-          label="ÖĞÜN TUTTURMA"
-          value={loggedDays.length === 0 ? '—' : `%${Math.round(adherence)}`}
-          sub={`${fullDays.length}/${loggedDays.length} gün tam`}
-          color={
-            loggedDays.length === 0 ? undefined : adherence >= 80 ? colors.success : colors.warning
-          }
-        />
-        <StatTile label="KALORİ HEDEFİ" value={`${state.calorieTarget}`} sub="kcal / gün" />
-      </Row>
-
-      <Card>
-        <Text style={font.h3}>Haftalık ortalama kalori alımı</Text>
-        <Text style={font.small}>Sadece öğün işaretlediğin günler sayılır.</Text>
-        <BarChart
-          data={nutritionWeeks.slice(-10).map((w) => ({
-            label: formatShort(w.week),
-            value: Math.round(w.avg),
-          }))}
-          unit="kcal"
-        />
-      </Card>
-
-      <Card>
-        <Text style={font.h3}>Kalori hedefinin değişimi</Text>
-        <Text style={font.small}>Uygulamanın yaptığı otomatik ayarlamalar dahil.</Text>
+      <Section>
+        <Text style={font.h3}>Kalori hedefi · zaman içinde</Text>
+        <Text style={font.small}>Uygulamanın yaptığı ayarlar dahil</Text>
         <LineChart
           labels={state.targetHistory.map((t) => formatShort(t.date))}
           unit="kcal"
           decimals={0}
-          series={[
-            {
-              name: 'Hedef',
-              color: series[3],
-              values: state.targetHistory.map((t) => t.kcal),
-            },
-          ]}
+          height={150}
+          series={[{ name: 'Hedef', color: colors.ink, values: state.targetHistory.map((t) => t.kcal), width: 2.5 }]}
         />
-      </Card>
+      </Section>
 
-      {weights.length > 1 ? (
-        <Card>
-          <Text style={font.h3}>Kilo eğrisi</Text>
-          <LineChart
-            labels={weights.map((w) => formatShort(w.date))}
-            unit="kg"
-            decimals={1}
-            series={[
-              { name: 'Günlük', color: colors.textFaint, values: weights.map((w) => w.weight) },
-              {
-                name: '7 gün ortalama',
-                color: series[0],
-                values: weights.map((w) => w.average),
-                dots: false,
-              },
-            ]}
+      {nutritionWeeks.length > 0 ? (
+        <Section>
+          <Text style={font.h3}>Haftalık ortalama kalori alımı</Text>
+          <BarChart
+            data={nutritionWeeks.slice(-8).map((w) => ({ label: formatShort(w.week), value: Math.round(w.avg) }))}
+            height={150}
           />
-        </Card>
+        </Section>
       ) : null}
-      <View style={{ height: 8 }} />
+
+      <Section>
+        <Grid>
+          {[
+            { label: 'Antrenman', value: String(completed.length), note: 'tamamlanan' },
+            {
+              label: 'Toplam hacim',
+              value:
+                totalVolume >= 10000
+                  ? `${Math.round(totalVolume / 1000)}b`
+                  : Math.round(totalVolume).toLocaleString('tr-TR'),
+              note: 'kg',
+            },
+            {
+              label: 'Öğün tutturma',
+              value: loggedDays.length === 0 ? '—' : `%${Math.round(adherence)}`,
+              note: `${fullDays.length}/${loggedDays.length} gün tam`,
+            },
+            { label: 'Kalori hedefi', value: String(state.calorieTarget), note: 'kcal / gün' },
+          ].map((t) => (
+            <StatTile key={t.label} label={t.label} value={t.value} sub={t.note} />
+          ))}
+        </Grid>
+      </Section>
+
+      <Section>
+        <Text style={font.h3}>Ayarlar ve yedek</Text>
+        <View>
+          <DataRow label="Program" value={state.programId === 'kalca' ? 'Kalça ağırlıklı' : 'Hipertrofi PPL'} strong />
+          <DataRow label="Dinlenme sayacı" value={`${state.settings.restSeconds} sn`} strong />
+          <DataRow label="Günlük kalori hedefi" value={`${state.calorieTarget} kcal`} strong />
+          <DataRow
+            label="Protein tabanı"
+            value={`${state.settings.proteinFloor} g · asla altına inmez`}
+            strong
+          />
+          <DataRow label="Veri" value="Cihazda kalıcı · offline" strong />
+        </View>
+        <Button title="Ayarları aç →" variant="ghost" onPress={() => go('settings')} />
+      </Section>
     </Screen>
   );
 };
+
+const styles = StyleSheet.create({
+  placeholder: { fontFamily: fonts.regular, color: colors.muted },
+});
