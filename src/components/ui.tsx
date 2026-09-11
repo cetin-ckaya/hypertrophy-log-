@@ -9,24 +9,23 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle, Defs, LinearGradient as SvgGradient, Path, Stop } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
-import { colors, font, heroGradient, radius, spacing } from '../theme';
-import { MinusIcon, PlusIcon } from './icons';
+import { colors, font, fonts, rules, spacing } from '../theme';
 
+/** Sayfa kabuğu: sticky başlık + 2px alt kural. */
 export const Screen = ({
   children,
   title,
-  subtitle,
+  kicker,
   right,
   left,
   scroll = true,
 }: {
   children: ReactNode;
   title?: string;
-  subtitle?: string;
+  kicker?: string;
   right?: ReactNode;
   left?: ReactNode;
   scroll?: boolean;
@@ -36,9 +35,9 @@ export const Screen = ({
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           {left}
-          <View>
-            <Text style={font.h1}>{title}</Text>
-            {subtitle ? <Text style={styles.headerSub}>{subtitle}</Text> : null}
+          <View style={{ flex: 1 }}>
+            {kicker ? <Text style={font.label}>{kicker}</Text> : null}
+            <Text style={[font.h1, { marginTop: kicker ? 3 : 0 }]}>{title}</Text>
           </View>
         </View>
         {right}
@@ -58,6 +57,28 @@ export const Screen = ({
   </SafeAreaView>
 );
 
+/** Bölüm: üstünde 2px kural, altında boşluk. Kart yok — kural ayırır. */
+export const Section = ({
+  children,
+  style,
+  strong = true,
+}: {
+  children: ReactNode;
+  style?: ViewStyle;
+  strong?: boolean;
+}) => (
+  <View
+    style={[
+      styles.section,
+      { borderTopWidth: strong ? rules.strong : rules.light, borderTopColor: strong ? colors.rule : colors.ruleLight },
+      style,
+    ]}
+  >
+    {children}
+  </View>
+);
+
+/** Çerçeveli blok — uyarılar ve öneri kartları için. */
 export const Card = ({
   children,
   style,
@@ -65,40 +86,40 @@ export const Card = ({
 }: {
   children: ReactNode;
   style?: ViewStyle;
-  tone?: 'default' | 'warning' | 'success' | 'primary' | 'danger';
-}) => {
-  const toneColor =
-    tone === 'warning'
-      ? colors.warning
-      : tone === 'success'
-      ? colors.success
-      : tone === 'primary'
-      ? colors.primary
-      : tone === 'danger'
-      ? colors.danger
-      : undefined;
-  return (
-    <View style={[styles.card, toneColor ? { borderColor: toneColor } : null, style]}>
-      {children}
-    </View>
-  );
-};
-
-/** Ana ekranın gradyanlı üst kartı. */
-export const HeroCard = ({ children, style }: { children: ReactNode; style?: ViewStyle }) => (
-  <LinearGradient
-    colors={heroGradient}
-    start={{ x: 0, y: 0 }}
-    end={{ x: 1, y: 1 }}
-    style={[styles.hero, style]}
+  tone?: 'default' | 'accent' | 'ink';
+}) => (
+  <View
+    style={[
+      styles.card,
+      styles.cardPad,
+      tone === 'accent' ? { borderColor: colors.accent } : null,
+      style,
+    ]}
   >
-    <View style={styles.heroBlob} pointerEvents="none" />
     {children}
-  </LinearGradient>
+  </View>
+);
+
+/** Kırmızı başlık şeridi olan çerçeveli blok. */
+export const BannerCard = ({
+  kicker,
+  children,
+  tone = 'accent',
+}: {
+  kicker: string;
+  children: ReactNode;
+  tone?: 'accent' | 'ink';
+}) => (
+  <View style={[styles.card, { borderColor: tone === 'accent' ? colors.accent : colors.ink }]}>
+    <View style={[styles.bannerHead, { backgroundColor: tone === 'accent' ? colors.accent : colors.ink }]}>
+      <Text style={styles.bannerHeadText}>{kicker}</Text>
+    </View>
+    <View style={{ padding: spacing.lg, gap: spacing.md }}>{children}</View>
+  </View>
 );
 
 export const SectionTitle = ({ children, style }: { children: ReactNode; style?: ViewStyle }) => (
-  <Text style={[font.label, styles.sectionTitle, style]}>{children}</Text>
+  <Text style={[font.label, style]}>{children}</Text>
 );
 
 export const Label = ({ children, style }: { children: ReactNode; style?: object }) => (
@@ -109,6 +130,7 @@ export const Muted = ({ children, style }: { children: ReactNode; style?: object
   <Text style={[font.small, style]}>{children}</Text>
 );
 
+/** Düğme — metin daima sola dayalı, köşe yok. */
 export const Button = ({
   title,
   onPress,
@@ -120,37 +142,16 @@ export const Button = ({
 }: {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'ghost' | 'success' | 'danger' | 'warning' | 'light' | 'soft';
+  variant?: 'primary' | 'ghost' | 'ink' | 'soft' | 'light' | 'success' | 'danger' | 'warning';
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   style?: ViewStyle;
   icon?: ReactNode;
 }) => {
-  const bg =
-    variant === 'primary'
-      ? colors.primary
-      : variant === 'success'
-      ? colors.success
-      : variant === 'danger'
-      ? colors.danger
-      : variant === 'warning'
-      ? colors.warning
-      : variant === 'light'
-      ? '#FFFFFF'
-      : variant === 'soft'
-      ? colors.cardAlt
-      : 'transparent';
-  const fg =
-    variant === 'ghost'
-      ? colors.text
-      : variant === 'soft'
-      ? colors.text
-      : variant === 'light'
-      ? '#112233'
-      : variant === 'success' || variant === 'warning'
-      ? '#16250A'
-      : '#fff';
-  const height = size === 'lg' ? 54 : size === 'sm' ? 38 : 46;
+  const solid = variant === 'primary' || variant === 'success' || variant === 'warning' || variant === 'danger';
+  const bg = solid ? colors.accent : variant === 'ink' ? colors.ink : 'transparent';
+  const fg = solid || variant === 'ink' ? colors.onAccent : colors.ink;
+  const height = size === 'lg' ? 56 : size === 'sm' ? 42 : 48;
   return (
     <Pressable
       onPress={onPress}
@@ -158,25 +159,17 @@ export const Button = ({
       style={({ pressed }) => [
         styles.button,
         {
-          backgroundColor: bg,
-          borderColor:
-            variant === 'ghost' || variant === 'soft' ? colors.border : bg,
+          backgroundColor: pressed && solid ? colors.accentPressed : pressed && !solid ? colors.hover : bg,
+          borderWidth: solid || variant === 'ink' ? 0 : rules.strong,
+          borderColor: colors.ink,
           height,
-          borderRadius: size === 'lg' ? radius.md + 1 : radius.md,
-          opacity: disabled ? 0.4 : pressed ? 0.78 : 1,
+          opacity: disabled ? 0.45 : 1,
         },
         style,
       ]}
     >
       {icon}
-      <Text
-        style={[
-          styles.buttonText,
-          { color: fg, fontSize: size === 'lg' ? 15.5 : size === 'sm' ? 13 : 14.5 },
-        ]}
-      >
-        {title}
-      </Text>
+      <Text style={[font.button, { color: fg, fontSize: size === 'lg' ? 14 : 13 }]}>{title}</Text>
     </Pressable>
   );
 };
@@ -184,7 +177,7 @@ export const Button = ({
 export const IconButton = ({
   children,
   onPress,
-  size = 38,
+  size = 42,
   label,
 }: {
   children: ReactNode;
@@ -199,18 +192,59 @@ export const IconButton = ({
     accessibilityLabel={label}
     style={({ pressed }) => [
       styles.iconButton,
-      { width: size, height: size, opacity: pressed ? 0.7 : 1 },
+      { width: size, height: size, backgroundColor: pressed ? colors.hover : 'transparent' },
     ]}
   >
     {children}
   </Pressable>
 );
 
+/** Yan yana dizilen, 2px kuralla ayrılmış seçim düğmeleri. */
+export const Segmented = ({
+  options,
+  value,
+  onChange,
+  style,
+}: {
+  options: { key: string; label: string }[];
+  value: string;
+  onChange: (key: string) => void;
+  style?: ViewStyle;
+}) => (
+  <View style={[styles.segmented, style]}>
+    {options.map((o, i) => {
+      const active = o.key === value;
+      return (
+        <Pressable
+          key={o.key}
+          onPress={() => onChange(o.key)}
+          accessibilityRole="button"
+          accessibilityLabel={o.label}
+          style={[
+            styles.segment,
+            i < options.length - 1 ? styles.segmentDivider : null,
+            active ? { backgroundColor: colors.ink } : null,
+          ]}
+        >
+          <Text
+            style={[
+              font.button,
+              { fontSize: 12, color: active ? colors.onAccent : colors.ink },
+            ]}
+            numberOfLines={1}
+          >
+            {o.label}
+          </Text>
+        </Pressable>
+      );
+    })}
+  </View>
+);
+
 export const Chip = ({
   label,
   active,
   onPress,
-  color,
 }: {
   label: string;
   active?: boolean;
@@ -222,70 +256,42 @@ export const Chip = ({
     style={({ pressed }) => [
       styles.chip,
       {
-        backgroundColor: active ? color ?? colors.primary : colors.cardAlt,
-        borderColor: active ? color ?? colors.primary : colors.border,
-        opacity: pressed ? 0.75 : 1,
+        backgroundColor: active ? colors.ink : pressed ? colors.hover : 'transparent',
       },
     ]}
   >
-    <Text style={{ color: active ? '#fff' : colors.textDim, fontWeight: '700', fontSize: 12.5 }}>
+    <Text
+      style={[font.button, { fontSize: 11.5, color: active ? colors.onAccent : colors.ink }]}
+    >
       {label}
     </Text>
   </Pressable>
 );
 
-/** İki seçenekli segment düğmesi (antrenman / dinlenme günü gibi). */
-export const Toggle = ({
-  options,
-  value,
-  onChange,
-}: {
-  options: { key: string; label: string }[];
-  value: string;
-  onChange: (key: string) => void;
-}) => (
-  <View style={styles.toggle}>
-    {options.map((o) => {
-      const active = o.key === value;
-      return (
-        <Pressable
-          key={o.key}
-          onPress={() => onChange(o.key)}
-          style={[styles.toggleItem, active ? styles.toggleItemOn : null]}
-        >
-          <Text
-            style={{
-              fontSize: 12.5,
-              fontWeight: '700',
-              color: active ? '#fff' : colors.textDim,
-            }}
-          >
-            {o.label}
-          </Text>
-        </Pressable>
-      );
-    })}
+export const Tag = ({ label, tone = 'ink' }: { label: string; tone?: 'ink' | 'accent' }) => (
+  <View style={[styles.tag, tone === 'accent' ? { borderColor: colors.accent } : null]}>
+    <Text
+      style={[
+        font.button,
+        { fontSize: 11, color: tone === 'accent' ? colors.accentInk : colors.ink },
+      ]}
+    >
+      {label}
+    </Text>
   </View>
 );
 
-export const Badge = ({
-  label,
-  color = colors.success,
-}: {
-  label: string;
-  color?: string;
-}) => (
-  <View style={[styles.badge, { backgroundColor: `${color}22` }]}>
-    <Text style={{ color, fontSize: 10.5, fontWeight: '800', letterSpacing: 0.4 }}>{label}</Text>
+export const Badge = ({ label, color = colors.accent }: { label: string; color?: string }) => (
+  <View style={[styles.badge, { backgroundColor: color }]}>
+    <Text style={[font.button, { fontSize: 10.5, color: colors.onAccent }]}>{label}</Text>
   </View>
 );
 
 export const ProgressBar = ({
   value,
   target,
-  color = colors.primary,
-  height = 4,
-  warnOnOver = true,
+  color = colors.ink,
+  height = 8,
 }: {
   value: number;
   target: number;
@@ -294,23 +300,15 @@ export const ProgressBar = ({
   warnOnOver?: boolean;
 }) => {
   const pct = target > 0 ? Math.min(1, value / target) : 0;
-  const over = warnOnOver && target > 0 && value / target > 1.08;
   return (
-    <View style={[styles.progressTrack, { height, borderRadius: height / 2 }]}>
-      <View
-        style={{
-          width: `${pct * 100}%`,
-          height: '100%',
-          borderRadius: height / 2,
-          backgroundColor: over ? colors.warning : color,
-        }}
-      />
+    <View style={[styles.progressTrack, { height }]}>
+      <View style={{ width: `${pct * 100}%`, height: '100%', backgroundColor: color }} />
     </View>
   );
 };
 
-/** Makro kutucuğu: başlık, değer/hedef ve ince bir çubuk. */
-export const MacroTile = ({
+/** Makro satırı: ETIKET — çubuk — değer. */
+export const MacroBar = ({
   label,
   value,
   target,
@@ -323,72 +321,25 @@ export const MacroTile = ({
   color: string;
   unit?: string;
 }) => (
-  <View style={styles.macroTile}>
-    <Text style={styles.macroLabel}>{label}</Text>
-    <Text style={[styles.macroValue, font.num]}>
-      {Math.round(value)}
-      <Text style={styles.macroTarget}>
-        /{Math.round(target)} {unit}
+  <View style={{ gap: 5 }}>
+    <View style={styles.rowBetween}>
+      <Text style={[font.labelSm, { color: colors.ink }]}>{label}</Text>
+      <Text style={[font.tiny, font.num]}>
+        {Math.round(value)} / {Math.round(target)} {unit}
       </Text>
-    </Text>
-    <ProgressBar value={value} target={target} color={color} height={3} warnOnOver={false} />
+    </View>
+    <ProgressBar value={value} target={target} color={color} height={8} />
   </View>
 );
 
-/** Kalori halkası — ortada yüzde, kenarda gradyanlı yay. */
-export const Ring = ({
-  progress,
-  size = 92,
-  stroke = 9,
-  caption = 'HEDEF',
-}: {
-  progress: number;
-  size?: number;
-  stroke?: number;
-  caption?: string;
-}) => {
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const pct = Math.max(0, Math.min(1, progress));
-  return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={size} height={size}>
-        <Defs>
-          <SvgGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={colors.primary} />
-            <Stop offset="1" stopColor={colors.cyan} />
-          </SvgGradient>
-        </Defs>
-        <Circle cx={size / 2} cy={size / 2} r={r} stroke={colors.cardAlt} strokeWidth={stroke} fill="none" />
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          stroke="url(#ringGrad)"
-          strokeWidth={stroke}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={`${c}`}
-          strokeDashoffset={c * (1 - pct)}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
-      </Svg>
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        <View style={styles.ringCenter}>
-          <Text style={[styles.ringPct, font.num]}>%{Math.round(pct * 100)}</Text>
-          <Text style={styles.ringCaption}>{caption}</Text>
-        </View>
-      </View>
-    </View>
-  );
-};
+export const MacroTile = MacroBar;
 
-/** Kartların içindeki küçük kilo/eğri çizimi. */
+/** İnce kilo eğrisi. */
 export const Sparkline = ({
   values,
   width = 150,
   height = 52,
-  color = colors.primary,
+  color = colors.accent,
 }: {
   values: number[];
   width?: number;
@@ -400,26 +351,19 @@ export const Sparkline = ({
   const min = Math.min(...points);
   const max = Math.max(...points);
   const span = max - min || 1;
-  const x = (i: number) => (i / (points.length - 1)) * (width - 6) + 3;
-  const y = (v: number) => height - 6 - ((v - min) / span) * (height - 12);
+  const x = (i: number) => (i / (points.length - 1)) * (width - 4) + 2;
+  const y = (v: number) => height - 8 - ((v - min) / span) * (height - 16);
   const d = points.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
-  const area = `${d} L${x(points.length - 1).toFixed(1)} ${height} L${x(0).toFixed(1)} ${height} Z`;
   return (
     <Svg width={width} height={height}>
-      <Defs>
-        <SvgGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={color} stopOpacity="0.35" />
-          <Stop offset="1" stopColor={color} stopOpacity="0" />
-        </SvgGradient>
-      </Defs>
-      <Path d={area} fill="url(#sparkGrad)" />
-      <Path d={d} stroke={color} strokeWidth={2.2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-      <Circle cx={x(points.length - 1)} cy={y(points[points.length - 1])} r={3.4} fill={colors.text} />
+      <Path d={`M0 ${height - 1} L${width} ${height - 1}`} stroke={colors.ink} strokeWidth={2} />
+      <Path d={d} stroke={color} strokeWidth={2.5} fill="none" />
+      <Circle cx={x(points.length - 1)} cy={y(points[points.length - 1])} r={3} fill={color} />
     </Svg>
   );
 };
 
-/** Büyük dokunma alanlı sayı girişi: −  [ 62,5 kg ]  + */
+/** Sayı girişi: [−] değer [+] — 2px çerçeve, köşe yok. */
 export const NumberStepper = ({
   value,
   onChange,
@@ -439,7 +383,6 @@ export const NumberStepper = ({
   decimals?: number;
   compact?: boolean;
 }) => {
-  // Ondalık ayracı Türkçe virgül; commit() hem virgülü hem noktayı kabul eder.
   const format = (n: number) =>
     (Number.isInteger(n) ? String(n) : String(Number(n.toFixed(decimals)))).replace('.', ',');
   const [text, setText] = useState(format(value));
@@ -464,12 +407,19 @@ export const NumberStepper = ({
     setText(format(next));
   };
 
-  const btnW = compact ? 34 : 44;
+  const btnW = compact ? 32 : 44;
 
   return (
-    <View style={[styles.stepper, compact ? { height: 48 } : null]}>
-      <Pressable style={[styles.stepperBtn, { width: btnW }]} onPress={() => bump(-step)} hitSlop={6}>
-        <MinusIcon size={compact ? 15 : 17} color={colors.textDim} />
+    <View style={[styles.stepper, compact ? { height: 46 } : null]}>
+      <Pressable
+        style={({ pressed }) => [
+          styles.stepperBtn,
+          { width: btnW, borderRightWidth: rules.strong, backgroundColor: pressed ? colors.hover : 'transparent' },
+        ]}
+        onPress={() => bump(-step)}
+        hitSlop={6}
+      >
+        <Text style={styles.stepperSign}>−</Text>
       </Pressable>
       <View style={styles.stepperValue}>
         <TextInput
@@ -483,13 +433,20 @@ export const NumberStepper = ({
           onSubmitEditing={() => commit(text)}
           keyboardType="decimal-pad"
           selectTextOnFocus
-          style={[styles.stepperInput, compact ? { fontSize: 17 } : null]}
-          placeholderTextColor={colors.textFaint}
+          style={[styles.stepperInput, compact ? { fontSize: 16 } : null]}
+          placeholderTextColor={colors.muted}
         />
-        {suffix ? <Text style={styles.stepperSuffix}>{suffix}</Text> : null}
+        {suffix ? <Text style={styles.stepperSuffix}>{suffix.toUpperCase()}</Text> : null}
       </View>
-      <Pressable style={[styles.stepperBtn, { width: btnW }]} onPress={() => bump(step)} hitSlop={6}>
-        <PlusIcon size={compact ? 15 : 17} color={colors.textDim} />
+      <Pressable
+        style={({ pressed }) => [
+          styles.stepperBtn,
+          { width: btnW, borderLeftWidth: rules.strong, backgroundColor: pressed ? colors.hover : 'transparent' },
+        ]}
+        onPress={() => bump(step)}
+        hitSlop={6}
+      >
+        <Text style={styles.stepperSign}>+</Text>
       </Pressable>
     </View>
   );
@@ -510,20 +467,21 @@ export const Field = ({
   keyboardType?: 'default' | 'decimal-pad' | 'numeric';
   multiline?: boolean;
 }) => (
-  <View style={{ gap: 6 }}>
-    {label ? <Text style={font.small}>{label}</Text> : null}
+  <View style={{ gap: 5 }}>
+    {label ? <Text style={font.label}>{label}</Text> : null}
     <TextInput
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
-      placeholderTextColor={colors.textFaint}
+      placeholderTextColor={colors.muted}
       keyboardType={keyboardType}
       multiline={multiline}
-      style={[styles.field, multiline ? { height: 120, textAlignVertical: 'top' } : null]}
+      style={[styles.field, multiline ? { height: 130, textAlignVertical: 'top' } : null]}
     />
   </View>
 );
 
+/** 2px kuralla ayrılmış hücre — istatistik ızgarası. */
 export const StatTile = ({
   label,
   value,
@@ -536,17 +494,45 @@ export const StatTile = ({
   color?: string;
 }) => (
   <View style={styles.tile}>
-    <Text style={font.label}>{label}</Text>
+    <Text style={font.labelSm}>{label}</Text>
     <Text style={[styles.tileValue, font.num, color ? { color } : null]}>{value}</Text>
     {sub ? <Text style={font.tiny}>{sub}</Text> : null}
   </View>
 );
 
-export const Divider = () => <View style={styles.divider} />;
+/** Hücreleri 2px mürekkep boşlukla ayıran ızgara. */
+export const Grid = ({ children, style }: { children: ReactNode; style?: ViewStyle }) => (
+  <View style={[styles.grid, style]}>{children}</View>
+);
+
+/** Etiket — değer satırı. */
+export const DataRow = ({
+  label,
+  value,
+  strong,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+}) => (
+  <View style={styles.dataRow}>
+    <Text style={[font.body, { flex: 1 }]}>{label}</Text>
+    <Text style={[strong ? font.bodyStrong : font.body, font.num]}>{value}</Text>
+  </View>
+);
+
+export const Divider = ({ strong }: { strong?: boolean }) => (
+  <View
+    style={{
+      height: strong ? rules.strong : rules.light,
+      backgroundColor: strong ? colors.rule : colors.ruleLight,
+    }}
+  />
+);
 
 export const Loading = () => (
   <View style={[styles.flex, styles.center, { backgroundColor: colors.bg }]}>
-    <ActivityIndicator color={colors.primary} size="large" />
+    <ActivityIndicator color={colors.accent} size="large" />
   </View>
 );
 
@@ -566,104 +552,84 @@ const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
   header: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xs,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.md,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
+    borderBottomWidth: rules.strong,
+    borderBottomColor: colors.rule,
+    gap: spacing.md,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1 },
-  headerSub: { fontSize: 12.5, color: colors.textDim, marginTop: 2 },
-  scrollContent: { paddingHorizontal: spacing.lg, paddingTop: 0, paddingBottom: 40, gap: spacing.md },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius.xl,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
+  scrollContent: { paddingHorizontal: spacing.lg, paddingBottom: 40 },
+  section: { paddingVertical: spacing.lg, gap: spacing.md },
+  card: { borderWidth: rules.strong, borderColor: colors.ink, marginVertical: spacing.md },
+  cardPad: { padding: spacing.lg, gap: spacing.md },
+  bannerHead: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  bannerHeadText: {
+    fontFamily: fonts.extra,
+    fontSize: 11,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: colors.onAccent,
   },
-  hero: { borderRadius: radius.xl, padding: spacing.lg, overflow: 'hidden' },
-  heroBlob: {
-    position: 'absolute',
-    right: -46,
-    top: -46,
-    width: 190,
-    height: 190,
-    borderRadius: 95,
-    backgroundColor: 'rgba(255,255,255,0.13)',
-  },
-  sectionTitle: { marginTop: spacing.sm },
   button: {
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     flexDirection: 'row',
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
-    borderWidth: 1,
   },
-  buttonText: { fontWeight: '800' },
   iconButton: {
-    borderRadius: radius.md,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: rules.strong,
+    borderColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-  },
-  toggle: {
+  segmented: {
     flexDirection: 'row',
-    backgroundColor: colors.cardAlt,
-    borderRadius: radius.md,
-    padding: 4,
-    gap: 4,
+    borderTopWidth: rules.strong,
+    borderBottomWidth: rules.strong,
+    borderColor: colors.rule,
   },
-  toggleItem: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.sm },
-  toggleItemOn: { backgroundColor: colors.primary },
-  badge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.sm },
-  progressTrack: { backgroundColor: colors.cardAlt, overflow: 'hidden', width: '100%' },
-  macroTile: {
+  segment: {
     flex: 1,
-    backgroundColor: colors.cardAlt,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    gap: 5,
+    minHeight: 46,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
   },
-  macroLabel: {
-    fontSize: 9.5,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    color: colors.textFaint,
+  segmentDivider: { borderRightWidth: rules.strong, borderRightColor: colors.rule },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: rules.strong,
+    borderColor: colors.ink,
   },
-  macroValue: { fontSize: 17, fontWeight: '800', color: colors.text, letterSpacing: -0.4 },
-  macroTarget: { fontSize: 11.5, color: colors.textFaint, fontWeight: '600' },
-  ringCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  ringPct: { fontSize: 19, fontWeight: '800', color: colors.text, letterSpacing: -0.5 },
-  ringCaption: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 1,
-    color: colors.textFaint,
-    marginTop: 1,
+  tag: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderWidth: rules.strong,
+    borderColor: colors.ink,
   },
+  badge: { paddingHorizontal: 8, paddingVertical: 4 },
+  progressTrack: { backgroundColor: colors.ruleLight, overflow: 'hidden', width: '100%' },
+  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.cardAlt,
-    borderRadius: radius.md,
-    height: 52,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
+    backgroundColor: colors.surface,
+    height: 50,
+    borderWidth: rules.strong,
+    borderColor: colors.ink,
   },
-  stepperBtn: { alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch' },
+  stepperBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'stretch',
+    borderColor: colors.ruleLight,
+  },
+  stepperSign: { fontFamily: fonts.extra, fontSize: 19, color: colors.ink, lineHeight: 24 },
   stepperValue: {
     flex: 1,
     minWidth: 0,
@@ -672,9 +638,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepperInput: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '800',
+    color: colors.ink,
+    fontFamily: fonts.extra,
+    fontSize: 17,
     textAlign: 'center',
     flex: 1,
     minWidth: 0,
@@ -682,25 +648,40 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     fontVariant: ['tabular-nums'],
   },
-  stepperSuffix: { color: colors.textFaint, fontSize: 11, marginLeft: 2, fontWeight: '600' },
+  stepperSuffix: {
+    color: colors.muted,
+    fontFamily: fonts.bold,
+    fontSize: 9.5,
+    marginLeft: 5,
+    letterSpacing: 0.4,
+  },
   field: {
-    backgroundColor: colors.cardAlt,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    color: colors.text,
+    backgroundColor: colors.surface,
+    borderWidth: rules.strong,
+    borderColor: colors.ink,
+    color: colors.ink,
+    fontFamily: fonts.medium,
     paddingHorizontal: spacing.md,
     paddingVertical: 12,
-    fontSize: 14.5,
+    fontSize: 16,
+    minHeight: 48,
   },
-  tile: {
-    flex: 1,
-    backgroundColor: colors.cardAlt,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    gap: 3,
-    minWidth: 96,
+  tile: { flex: 1, minWidth: 96, backgroundColor: colors.bg, padding: spacing.md, gap: 3 },
+  tileValue: { fontFamily: fonts.black, fontSize: 26, letterSpacing: -0.6, color: colors.ink },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: rules.strong,
+    backgroundColor: colors.ink,
+    borderWidth: rules.strong,
+    borderColor: colors.ink,
   },
-  tileValue: { fontSize: 20, fontWeight: '800', color: colors.text, letterSpacing: -0.5 },
-  divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.sm },
+  dataRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingVertical: 10,
+    borderTopWidth: rules.light,
+    borderTopColor: colors.ruleLight,
+  },
 });

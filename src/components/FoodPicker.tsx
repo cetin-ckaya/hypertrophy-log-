@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Food } from '../types';
-import { colors, font, radius, spacing } from '../theme';
+import { colors, font, rules, spacing } from '../theme';
 import { Field } from './ui';
 
 export const FoodPicker = ({
@@ -35,13 +35,14 @@ export const FoodPicker = ({
               onPress={() => onPick(f)}
               style={({ pressed }) => [
                 {
-                  backgroundColor: pressed ? colors.border : colors.cardAlt,
-                  borderRadius: radius.sm,
+                  backgroundColor: pressed ? colors.hover : colors.surface,
+                  borderWidth: rules.strong,
+                  borderColor: colors.ink,
                   padding: spacing.md,
                 },
               ]}
             >
-              <Text style={[font.body, { fontWeight: '600' }]}>{f.name}</Text>
+              <Text style={font.bodyStrong}>{f.name}</Text>
               <Text style={font.tiny}>
                 100 {f.unit}: {f.kcal} kcal · P {f.protein} · K {f.carbs} · Y {f.fat}
               </Text>

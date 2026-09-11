@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Platform, Switch, Text, View } from 'react-native';
+import { Platform, Pressable, Switch, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -17,14 +17,16 @@ import {
   SectionTitle,
   StatTile,
 } from '../components/ui';
+import { ChevronLeftIcon } from '../components/icons';
 import { PROGRAMS } from '../data/program';
 import { todayKey } from '../logic/date';
 import { ACTIVITIES, GOALS, SEXES, activityOf, computeTargets, goalOf } from '../logic/energy';
 import { latestAverage } from '../logic/weight';
 import { useStore } from '../store/store';
 import { colors, font, macroColors, spacing } from '../theme';
+import { TabKey } from '../navigation';
 
-export const SettingsScreen = () => {
+export const SettingsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
   const state = useStore();
   const [status, setStatus] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [importText, setImportText] = useState('');
@@ -100,15 +102,23 @@ export const SettingsScreen = () => {
   };
 
   return (
-    <Screen title="Ayarlar" subtitle="Program, beslenme ve yedekleme">
+    <Screen
+      kicker="Ayarlar"
+      title="Program ve profil"
+      left={
+        <Pressable onPress={() => go('stats')} hitSlop={10}>
+          <ChevronLeftIcon size={20} color={colors.ink} />
+        </Pressable>
+      }
+    >
       <SectionTitle>Program</SectionTitle>
       {Object.values(PROGRAMS).map((program) => {
         const active = state.programId === program.id;
         return (
-          <Card key={program.id} tone={active ? 'primary' : undefined}>
+          <Card key={program.id} tone={active ? 'accent' : undefined}>
             <Row style={{ justifyContent: 'space-between' }}>
               <Text style={[font.h3, { flex: 1 }]}>{program.name}</Text>
-              {active ? <Badge label="AKTİF" color={colors.primary} /> : null}
+              {active ? <Badge label="AKTİF" /> : null}
             </Row>
             <Text style={font.small}>{program.description}</Text>
             <Text style={font.tiny}>
@@ -119,7 +129,7 @@ export const SettingsScreen = () => {
             {!active ? (
               <Button
                 title="Bu programa geç"
-                variant="soft"
+                variant="ghost"
                 onPress={() => {
                   state.setProgram(program.id);
                   setStatus({
@@ -184,7 +194,7 @@ export const SettingsScreen = () => {
           <Switch
             value={state.settings.autoAdjustEnabled}
             onValueChange={(v) => state.updateSettings({ autoAdjustEnabled: v })}
-            trackColor={{ true: colors.primary, false: colors.border }}
+            trackColor={{ true: colors.accent, false: colors.ruleLight }}
           />
         </Row>
 
@@ -290,7 +300,7 @@ export const SettingsScreen = () => {
       </Card>
 
       <SectionTitle>Hesaplanan kalori ve makrolar</SectionTitle>
-      <Card tone={applied ? 'success' : 'primary'}>
+      <Card tone="accent">
         <Text style={font.small}>
           Mifflin-St Jeor formülüyle bazal metabolizman, aktivite katsayınla günlük harcaman ve
           hedefine göre başlangıç kalorin hesaplanır. Uyguladıktan sonra haftalık kilo ortalamana
@@ -349,11 +359,11 @@ export const SettingsScreen = () => {
           Tüm veriler cihazında saklanır. Düzenli olarak JSON yedeği almanı öneririm.
         </Text>
         <Button title="JSON olarak dışa aktar" onPress={exportFile} />
-        <Button title="JSON'u panoya kopyala" variant="soft" onPress={copyJson} />
-        <Button title="Dosyadan geri yükle" variant="soft" onPress={importFromFile} />
+        <Button title="JSON'u panoya kopyala" variant="ghost" onPress={copyJson} />
+        <Button title="Dosyadan geri yükle" variant="ghost" onPress={importFromFile} />
         <Button
           title={showImport ? 'Yapıştırma alanını kapat' : 'JSON yapıştırarak geri yükle'}
-          variant="soft"
+          variant="ghost"
           onPress={() => setShowImport(!showImport)}
         />
         {showImport ? (
@@ -366,7 +376,7 @@ export const SettingsScreen = () => {
             />
             <Button
               title="Geri yükle"
-              variant="warning"
+              variant="primary"
               onPress={() => {
                 const result = state.importPayload(importText);
                 setStatus(
@@ -395,7 +405,7 @@ export const SettingsScreen = () => {
       </Card>
 
       <SectionTitle>Tehlikeli bölge</SectionTitle>
-      <Card tone="danger">
+      <Card tone="accent">
         <Text style={font.small}>
           Tüm antrenman, beslenme ve kilo kayıtları silinir. Önce yedek almayı unutma.
         </Text>
@@ -413,13 +423,13 @@ export const SettingsScreen = () => {
             />
             <Button
               title="Vazgeç"
-              variant="soft"
+              variant="ghost"
               style={{ flex: 1 }}
               onPress={() => setConfirmReset(false)}
             />
           </Row>
         ) : (
-          <Button title="Tüm verileri sıfırla" variant="soft" onPress={() => setConfirmReset(true)} />
+          <Button title="Tüm verileri sıfırla" variant="ghost" onPress={() => setConfirmReset(true)} />
         )}
       </Card>
       <View style={{ height: 8 }} />

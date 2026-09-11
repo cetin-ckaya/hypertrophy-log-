@@ -1,6 +1,9 @@
 # Hipertrofi — Antrenman & Beslenme Takibi
 
-Tek kullanıcılık, Türkçe, koyu temalı bir antrenman ve beslenme takip uygulaması.
+Tek kullanıcılık, Türkçe bir antrenman ve beslenme takip uygulaması.
+Arayüz "Modernist" tasarım sistemiyle kurulu: açık zemin, Archivo tipografisi,
+tek kırmızı vurgu, sıfır köşe yarıçapı ve 2px kurallar — kart gölgesi yok,
+düzeni çizgiler kurar.
 Telefonda gerçek bir mobil uygulama olarak (Expo Go / APK), bilgisayarda tarayıcıdan çalışır.
 Tüm veriler cihazda saklanır — sunucu, hesap veya internet gerekmez.
 
@@ -160,8 +163,12 @@ düğmesi çıkar (fark karbonhidrattan kapatılır, protein tabanı korunur).
 ## Teknoloji
 
 React Native + Expo (SDK 57) · TypeScript · zustand + AsyncStorage (kalıcı state) ·
-react-native-svg (grafikler, harici chart kütüphanesi yok) · özel sekme navigasyonu ·
+Archivo (@expo-google-fonts) · react-native-svg (grafikler, harici chart kütüphanesi yok) ·
+dört sekmeli özel navigasyon (Bugün / Antrenman / Beslenme / İstatistik) ·
 servis çalışanı ile çevrimdışı PWA, GitHub Actions ile Pages'e otomatik yayın.
+
+Tasarım belirteçleri `src/theme.ts` içinde tek yerde toplanır: zemin `#F3F2F2`,
+mürekkep `#201E1D`, vurgu `#EC3013`, yarıçap `0`, kural kalınlıkları `2px` / `1px`.
 
 ```
 App.tsx                  sekme kabuğu
@@ -170,7 +177,8 @@ src/data/foods.ts        besin veritabanı ve varsayılan plan
 src/logic/               progression, beslenme, kilo/otomatik ayar, enerji hesabı, tarih
 src/store/store.ts       kalıcı state ve tüm aksiyonlar
 src/components/          ortak arayüz bileşenleri ve grafikler
-src/screens/             Ana, Antrenman, Beslenme, Kilo, İstatistik, Ayarlar
+src/screens/             Bugün, Antrenman (oturum/geçmiş/rekor), Beslenme
+                         (günlük/besin veritabanı), İstatistik (grafik/kilo/ayar özeti), Ayarlar
 public/                  PWA manifesti, servis çalışanı, ana ekran simgeleri
 scripts/pwa-postbuild.mjs  web çıktısını kurulabilir PWA'ya çevirir
 .github/workflows/       GitHub Pages yayın iş akışı

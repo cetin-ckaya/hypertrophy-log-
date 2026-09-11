@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
-import { colors, font, grid, series as PALETTE, spacing } from '../theme';
+import { colors, font, fonts, rules, spacing } from '../theme';
 
-const PAD = { top: 14, right: 12, bottom: 24, left: 40 };
+const PAD = { top: 10, right: 2, bottom: 22, left: 34 };
 
 export type LineSeries = {
   name: string;
@@ -12,9 +12,10 @@ export type LineSeries = {
   values: (number | null)[];
   dots?: boolean;
   dashed?: boolean;
+  width?: number;
 };
 
-const niceTicks = (min: number, max: number, count = 4): number[] => {
+const niceTicks = (min: number, max: number, count = 3): number[] => {
   if (!Number.isFinite(min) || !Number.isFinite(max)) return [0, 1];
   if (min === max) {
     const pad = Math.abs(min) * 0.05 || 1;
@@ -36,7 +37,7 @@ export const Legend = ({ items }: { items: { name: string; color: string }[] }) 
     {items.map((i) => (
       <View key={i.name} style={styles.legendItem}>
         <View style={[styles.swatch, { backgroundColor: i.color }]} />
-        <Text style={font.tiny}>{i.name}</Text>
+        <Text style={font.labelSm}>{i.name}</Text>
       </View>
     ))}
   </View>
@@ -44,14 +45,15 @@ export const Legend = ({ items }: { items: { name: string; color: string }[] }) 
 
 export const EmptyChart = ({ text }: { text: string }) => (
   <View style={styles.empty}>
-    <Text style={[font.small, { textAlign: 'center' }]}>{text}</Text>
+    <Text style={font.small}>{text}</Text>
   </View>
 );
 
+/** Düz çizgi grafiği — nokta yok, 2px taban kuralı, tek vurgu rengi. */
 export const LineChart = ({
   labels,
   series: data,
-  height = 190,
+  height = 180,
   unit = '',
   decimals = 1,
 }: {
@@ -98,46 +100,25 @@ export const LineChart = ({
 
   return (
     <View onLayout={onLayout} style={{ gap: 6 }}>
-      <View style={styles.readout}>
-        {idx !== null ? (
-          <>
-            <Text style={[font.small, { color: colors.text, fontWeight: '700' }]}>
-              {labels[idx]}
-            </Text>
-            {data.map((s) =>
-              s.values[idx] === null || s.values[idx] === undefined ? null : (
-                <View key={s.name} style={styles.legendItem}>
-                  <View style={[styles.swatch, { backgroundColor: s.color }]} />
-                  <Text style={font.tiny}>
-                    {s.name}: {fmt(s.values[idx] as number)}
-                  </Text>
-                </View>
-              )
-            )}
-          </>
-        ) : (
-          <Text style={font.tiny}>Değer görmek için grafiğe dokun</Text>
-        )}
-      </View>
-
       {width > 0 ? (
         <View>
           <Svg width={width} height={height}>
-            {ticks.map((t) => (
+            {ticks.map((t, i) => (
               <G key={t}>
                 <Line
                   x1={PAD.left}
                   x2={width - PAD.right}
                   y1={y(t)}
                   y2={y(t)}
-                  stroke={grid}
-                  strokeWidth={1}
+                  stroke={i === 0 ? colors.ink : colors.ruleLight}
+                  strokeWidth={i === 0 ? rules.strong : rules.light}
                 />
                 <SvgText
                   x={PAD.left - 6}
                   y={y(t) + 4}
                   fontSize={10}
-                  fill={colors.textFaint}
+                  fontFamily={fonts.bold}
+                  fill={colors.muted}
                   textAnchor="end"
                 >
                   {String(Number(t.toFixed(2))).replace('.', ',')}
@@ -150,31 +131,11 @@ export const LineChart = ({
                 key={s.name}
                 d={pathFor(s.values)}
                 stroke={s.color}
-                strokeWidth={2}
+                strokeWidth={s.width ?? (s.color === colors.accent ? 2.5 : 1.5)}
                 strokeDasharray={s.dashed ? '5 4' : undefined}
-                strokeLinejoin="round"
-                strokeLinecap="round"
                 fill="none"
               />
             ))}
-
-            {data.map((s) =>
-              s.dots === false
-                ? null
-                : s.values.map((v, i) =>
-                    v === null ? null : (
-                      <Circle
-                        key={`${s.name}-${i}`}
-                        cx={x(i)}
-                        cy={y(v)}
-                        r={idx === i ? 5.5 : 3.5}
-                        fill={s.color}
-                        stroke={colors.card}
-                        strokeWidth={2}
-                      />
-                    )
-                  )
-            )}
 
             {idx !== null ? (
               <Line
@@ -182,13 +143,13 @@ export const LineChart = ({
                 x2={x(idx)}
                 y1={PAD.top}
                 y2={PAD.top + innerH}
-                stroke={colors.textFaint}
+                stroke={colors.ink}
                 strokeWidth={1}
                 strokeDasharray="3 3"
               />
             ) : null}
 
-            <SvgText x={PAD.left} y={height - 6} fontSize={10} fill={colors.textFaint}>
+            <SvgText x={PAD.left} y={height - 6} fontSize={10} fontFamily={fonts.bold} fill={colors.muted}>
               {labels[0]}
             </SvgText>
             {labels.length > 1 ? (
@@ -196,7 +157,8 @@ export const LineChart = ({
                 x={width - PAD.right}
                 y={height - 6}
                 fontSize={10}
-                fill={colors.textFaint}
+                fontFamily={fonts.bold}
+                fill={colors.muted}
                 textAnchor="end"
               >
                 {labels[labels.length - 1]}
@@ -207,26 +169,30 @@ export const LineChart = ({
           <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
             <View style={{ flexDirection: 'row', flex: 1 }}>
               {labels.map((_, i) => (
-                <Pressable
-                  key={i}
-                  style={{ flex: 1 }}
-                  onPress={() => setSelected(selected === i ? null : i)}
-                />
+                <Pressable key={i} style={{ flex: 1 }} onPress={() => setSelected(selected === i ? null : i)} />
               ))}
             </View>
           </View>
         </View>
       ) : null}
 
-      {data.length > 1 ? (
-        <Legend items={data.map((s) => ({ name: s.name, color: s.color }))} />
-      ) : null}
+      <Text style={font.tiny}>
+        {idx === null
+          ? 'Değer görmek için grafiğe dokun'
+          : `${labels[idx]} · ${data
+              .filter((s) => s.values[idx] !== null && s.values[idx] !== undefined)
+              .map((s) => `${s.name} ${fmt(s.values[idx] as number)}`)
+              .join(' · ')}`}
+      </Text>
+
+      {data.length > 1 ? <Legend items={data.map((s) => ({ name: s.name, color: s.color }))} /> : null}
     </View>
   );
 };
 
 export type BarDatum = { label: string; value: number; color?: string };
 
+/** Düz mürekkep çubuklar — değer üstte, etiket altta. */
 export const BarChart = ({
   data,
   height = 170,
@@ -238,219 +204,77 @@ export const BarChart = ({
   unit?: string;
   formatValue?: (v: number) => string;
 }) => {
-  const [width, setWidth] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
   if (data.length === 0) return <EmptyChart text="Grafik için henüz yeterli veri yok." />;
-
   const max = Math.max(...data.map((d) => d.value), 1);
-  const innerH = height - PAD.top - PAD.bottom;
-  const innerW = Math.max(1, width - PAD.left - PAD.right);
-  const slot = innerW / data.length;
-  const barW = Math.max(6, Math.min(38, slot - 8));
   const fmt = formatValue ?? ((v: number) => `${Math.round(v)}${unit ? ` ${unit}` : ''}`);
 
   return (
-    <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)} style={{ gap: 6 }}>
-      <View style={styles.readout}>
-        <Text style={font.tiny}>
-          {selected === null
-            ? 'Değer görmek için bir çubuğa dokun'
-            : `${data[selected].label} · ${fmt(data[selected].value)}`}
-        </Text>
-      </View>
-      {width > 0 ? (
-        <View>
-          <Svg width={width} height={height}>
-            {niceTicks(0, max).map((t) => {
-              const yy = PAD.top + innerH - (t / max) * innerH;
-              return (
-                <G key={t}>
-                  <Line
-                    x1={PAD.left}
-                    x2={width - PAD.right}
-                    y1={yy}
-                    y2={yy}
-                    stroke={grid}
-                    strokeWidth={1}
-                  />
-                  <SvgText
-                    x={PAD.left - 6}
-                    y={yy + 4}
-                    fontSize={10}
-                    fill={colors.textFaint}
-                    textAnchor="end"
-                  >
-                    {t >= 1000 ? `${Math.round(t / 1000)}b` : String(Math.round(t))}
-                  </SvgText>
-                </G>
-              );
-            })}
-            {data.map((d, i) => {
-              const h = Math.max(2, (d.value / max) * innerH);
-              const cx = PAD.left + slot * i + slot / 2;
-              return (
-                <Rect
-                  key={i}
-                  x={cx - barW / 2}
-                  y={PAD.top + innerH - h}
-                  width={barW}
-                  height={h}
-                  rx={4}
-                  fill={d.color ?? PALETTE[0]}
-                  opacity={selected === null || selected === i ? 1 : 0.45}
-                />
-              );
-            })}
-            {data.map((d, i) => (
-              <SvgText
-                key={`l-${i}`}
-                x={PAD.left + slot * i + slot / 2}
-                y={height - 8}
-                fontSize={9}
-                fill={colors.textFaint}
-                textAnchor="middle"
-              >
-                {data.length > 8 && i % 2 === 1 ? '' : d.label}
-              </SvgText>
-            ))}
-          </Svg>
-          <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-            <View style={{ flexDirection: 'row', flex: 1, marginLeft: PAD.left, marginRight: PAD.right }}>
-              {data.map((_, i) => (
-                <Pressable
-                  key={i}
-                  style={{ flex: 1 }}
-                  onPress={() => setSelected(selected === i ? null : i)}
-                />
-              ))}
-            </View>
+    <View>
+      <View style={[styles.bars, { height }]}>
+        {data.map((d, i) => (
+          <View key={i} style={styles.barCol}>
+            <Text style={[font.labelSm, { color: colors.ink }]} numberOfLines={1}>
+              {fmt(d.value)}
+            </Text>
+            <View
+              style={{
+                width: '100%',
+                height: Math.max(2, (d.value / max) * (height - 26)),
+                backgroundColor: d.color ?? colors.ink,
+              }}
+            />
           </View>
-        </View>
-      ) : null}
+        ))}
+      </View>
+      <View style={styles.barLabels}>
+        {data.map((d, i) => (
+          <Text key={i} style={[font.labelSm, styles.barLabel]} numberOfLines={2}>
+            {d.label}
+          </Text>
+        ))}
+      </View>
     </View>
   );
 };
 
 export type StackDatum = { label: string; parts: { key: string; value: number; color: string }[] };
 
+/** Mono sistemde yığın yerine toplam çubuk — ayrıntı okunur listede verilir. */
 export const StackedBarChart = ({
   data,
-  height = 200,
-  legend,
+  height = 190,
   formatValue,
 }: {
   data: StackDatum[];
   height?: number;
-  legend: { name: string; color: string }[];
+  legend?: { name: string; color: string }[];
   formatValue?: (v: number) => string;
-}) => {
-  const [width, setWidth] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
-  if (data.length === 0) return <EmptyChart text="Grafik için henüz yeterli veri yok." />;
-
-  const totals = data.map((d) => d.parts.reduce((s, p) => s + p.value, 0));
-  const max = Math.max(...totals, 1);
-  const innerH = height - PAD.top - PAD.bottom;
-  const innerW = Math.max(1, width - PAD.left - PAD.right);
-  const slot = innerW / data.length;
-  const barW = Math.max(8, Math.min(40, slot - 10));
-  const fmt = formatValue ?? ((v: number) => `${Math.round(v)}`);
-
-  return (
-    <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)} style={{ gap: 6 }}>
-      <View style={styles.readout}>
-        {selected === null ? (
-          <Text style={font.tiny}>Detay için bir haftaya dokun</Text>
-        ) : (
-          <Text style={font.tiny}>
-            {data[selected].label} · toplam {fmt(totals[selected])} ·{' '}
-            {data[selected].parts
-              .filter((p) => p.value > 0)
-              .sort((a, b) => b.value - a.value)
-              .slice(0, 3)
-              .map((p) => `${p.key} ${fmt(p.value)}`)
-              .join(' · ')}
-          </Text>
-        )}
-      </View>
-      {width > 0 ? (
-        <View>
-          <Svg width={width} height={height}>
-            {niceTicks(0, max).map((t) => {
-              const yy = PAD.top + innerH - (t / max) * innerH;
-              return (
-                <G key={t}>
-                  <Line x1={PAD.left} x2={width - PAD.right} y1={yy} y2={yy} stroke={grid} strokeWidth={1} />
-                  <SvgText x={PAD.left - 6} y={yy + 4} fontSize={10} fill={colors.textFaint} textAnchor="end">
-                    {t >= 1000 ? `${Math.round(t / 1000)}b` : String(Math.round(t))}
-                  </SvgText>
-                </G>
-              );
-            })}
-            {data.map((d, i) => {
-              const cx = PAD.left + slot * i + slot / 2;
-              let acc = 0;
-              return (
-                <G key={i} opacity={selected === null || selected === i ? 1 : 0.45}>
-                  {d.parts.map((p, j) => {
-                    if (p.value <= 0) return null;
-                    const h = (p.value / max) * innerH;
-                    const gap = j === 0 ? 0 : 2; // yığın segmentleri arasında 2px yüzey boşluğu
-                    const yTop = PAD.top + innerH - acc - h;
-                    acc += h;
-                    return (
-                      <Rect
-                        key={p.key}
-                        x={cx - barW / 2}
-                        y={yTop + gap}
-                        width={barW}
-                        height={Math.max(1, h - gap)}
-                        rx={j === d.parts.length - 1 ? 4 : 0}
-                        fill={p.color}
-                      />
-                    );
-                  })}
-                </G>
-              );
-            })}
-            {data.map((d, i) => (
-              <SvgText
-                key={`l-${i}`}
-                x={PAD.left + slot * i + slot / 2}
-                y={height - 8}
-                fontSize={9}
-                fill={colors.textFaint}
-                textAnchor="middle"
-              >
-                {data.length > 8 && i % 2 === 1 ? '' : d.label}
-              </SvgText>
-            ))}
-          </Svg>
-          <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-            <View style={{ flexDirection: 'row', flex: 1, marginLeft: PAD.left, marginRight: PAD.right }}>
-              {data.map((_, i) => (
-                <Pressable key={i} style={{ flex: 1 }} onPress={() => setSelected(selected === i ? null : i)} />
-              ))}
-            </View>
-          </View>
-        </View>
-      ) : null}
-      <Legend items={legend} />
-    </View>
-  );
-};
+}) => (
+  <BarChart
+    data={data.map((d) => ({ label: d.label, value: d.parts.reduce((s, p) => s + p.value, 0) }))}
+    height={height}
+    formatValue={formatValue}
+  />
+);
 
 const styles = StyleSheet.create({
-  legend: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: 2 },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg, marginTop: 2 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  swatch: { width: 10, height: 10, borderRadius: 3 },
-  readout: { minHeight: 20, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, alignItems: 'center' },
+  swatch: { width: 18, height: 3 },
   empty: {
-    height: 110,
-    alignItems: 'center',
+    height: 90,
     justifyContent: 'center',
-    backgroundColor: colors.cardAlt,
-    borderRadius: 12,
-    padding: spacing.md,
+    borderTopWidth: rules.light,
+    borderTopColor: colors.ruleLight,
   },
+  bars: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+    borderBottomWidth: rules.strong,
+    borderBottomColor: colors.rule,
+  },
+  barCol: { flex: 1, alignItems: 'flex-start', justifyContent: 'flex-end', gap: 6, height: '100%' },
+  barLabels: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  barLabel: { flex: 1 },
 });

@@ -1,23 +1,22 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AdjustmentCard } from '../components/AdjustmentCard';
-import { ChevronRightIcon, DumbbellIcon, GearIcon } from '../components/icons';
+import { GearIcon } from '../components/icons';
 import {
-  Badge,
   Button,
   Card,
   Chip,
-  HeroCard,
+  Grid,
   IconButton,
   Label,
-  MacroTile,
-  Ring,
+  MacroBar,
+  NumberStepper,
   Row,
   Screen,
-  SectionTitle,
+  Section,
+  Segmented,
   Sparkline,
-  NumberStepper,
 } from '../components/ui';
 import { cycleDayOf, dayById, getProgram } from '../data/program';
 import { formatLong, todayKey } from '../logic/date';
@@ -25,7 +24,7 @@ import { eatenMacros } from '../logic/nutrition';
 import { sessionSetCount, sessionVolume } from '../logic/progression';
 import { latestAverage, sortedWeights, weeklyTrend } from '../logic/weight';
 import { dayLogFor, useStore } from '../store/store';
-import { colors, font, macroColors, spacing } from '../theme';
+import { colors, font, fonts, macroColors, rules, spacing } from '../theme';
 import { TabKey } from '../navigation';
 
 const signed = (n: number, digits = 2) =>
@@ -36,6 +35,7 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
   const today = todayKey();
   const program = getProgram(state.programId);
   const day = cycleDayOf(state.programId, state.cycleIndex);
+  const [view, setView] = useState<'cards' | 'cockpit'>('cards');
   const [weightDraft, setWeightDraft] = useState<number>(
     state.weights[today] ?? latestAverage(state.weights) ?? state.profile.startWeightKg
   );
@@ -54,219 +54,239 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
   const avg = latestAverage(state.weights);
   const weighedToday = state.weights[today] !== undefined;
   const lastSession = state.sessions[state.sessions.length - 1];
-  const eatenCount = log.meals.filter((m) => m.eaten).length;
-  const remaining = Math.max(0, state.calorieTarget - eaten.kcal);
-  const nextMeal = log.meals.find((m) => !m.eaten);
-  const sparkValues = useMemo(
-    () => sortedWeights(state.weights).slice(-21).map((w) => w.weight),
-    [state.weights]
-  );
+  const entries = sortedWeights(state.weights);
+  const lastEntry = entries[entries.length - 1];
+  const sparkValues = entries.slice(-21).map((w) => w.weight);
 
-  const inRange = trend.changeKg !== null && trend.changeKg >= 0.25 && trend.changeKg <= 0.5;
+  const summary =
+    day.kind === 'workout'
+      ? `${day.exercises.length} hareket · ${day.exercises.reduce((s, e) => s + e.sets, 0)} work-set`
+      : 'Toparlanma günü';
+
+  const macros = (
+    <>
+      <MacroBar label="Kalori" value={eaten.kcal} target={state.calorieTarget} unit="kcal" color={colors.ink} />
+      <MacroBar label="Protein" value={eaten.protein} target={state.macroTargets.protein} color={macroColors.protein} />
+      <MacroBar label="Karb" value={eaten.carbs} target={state.macroTargets.carbs} color={macroColors.carbs} />
+      <MacroBar label="Yağ" value={eaten.fat} target={state.macroTargets.fat} color={macroColors.fat} />
+    </>
+  );
 
   return (
     <Screen
-      title="Hipertrofi"
-      subtitle={formatLong(today)}
+      kicker={formatLong(today)}
+      title="Genel durum"
       right={
         <IconButton onPress={() => go('settings')} label="Ayarlar">
-          <GearIcon size={18} color={colors.textDim} />
+          <GearIcon size={18} color={colors.ink} />
         </IconButton>
       }
     >
+      <Segmented
+        options={[
+          { key: 'cards', label: 'Kartlar' },
+          { key: 'cockpit', label: 'Kokpit' },
+        ]}
+        value={view}
+        onChange={(k) => setView(k as 'cards' | 'cockpit')}
+        style={{ borderTopWidth: 0 }}
+      />
+
       {state.pendingAdjustment ? <AdjustmentCard /> : null}
 
       {state.activeSession ? (
-        <Card tone="primary">
+        <Card tone="accent">
           <Label>Devam eden antrenman</Label>
           <Text style={font.h2}>{dayById(state.activeSession.dayId)?.name}</Text>
-          <Button title="Antrenmana dön" onPress={() => go('workout')} size="lg" />
+          <Button title="Antrenmana dön →" onPress={() => go('workout')} />
         </Card>
       ) : null}
 
-      <HeroCard>
-        <Text style={[font.label, { color: 'rgba(255,255,255,0.72)' }]}>Bugünün günü</Text>
-        <Text style={styles.heroTitle}>{day.name}</Text>
-        <Text style={styles.heroSub}>
-          {day.kind === 'workout'
-            ? `${day.exercises.length} hareket · ${day.exercises.reduce((sum, e) => sum + e.sets, 0)} work-set · Döngü ${state.cycleIndex + 1}/${program.cycle.length}`
-            : `Toparlanma günü · Döngü ${state.cycleIndex + 1}/${program.cycle.length}`}
-        </Text>
-        <Row gap={5} style={{ marginTop: spacing.lg }}>
-          {program.cycle.map((_: string, i: number) => (
-            <View
-              key={i}
-              style={[styles.dot, i === state.cycleIndex ? styles.dotOn : null]}
-            />
-          ))}
-        </Row>
-        {day.kind === 'workout' ? (
-          <Button
-            title={state.activeSession ? 'Antrenmana dön' : 'Antrenmana başla'}
-            variant="light"
-            size="lg"
-            style={{ marginTop: spacing.lg }}
-            icon={<DumbbellIcon size={19} color="#112233" strokeWidth={2.2} />}
-            onPress={() => {
-              if (!state.activeSession) state.startWorkout();
-              go('workout');
-            }}
-          />
-        ) : (
-          <Button
-            title="Dinlenmeyi tamamla → sıradaki gün"
-            variant="light"
-            size="lg"
-            style={{ marginTop: spacing.lg }}
-            onPress={state.advanceCycle}
-          />
-        )}
-      </HeroCard>
-
-      <Card>
-        <Pressable onPress={() => go('nutrition')}>
-          <Row style={{ justifyContent: 'space-between' }}>
-            <Label>Bugünün beslenmesi</Label>
-            <Row gap={3}>
-              <Text style={styles.link}>
-                {eatenCount}/{log.meals.length} öğün
+      {view === 'cockpit' ? (
+        <View style={styles.cockpit}>
+          <View style={styles.cockpitHead}>
+            <Text style={[font.label, { color: 'rgba(255,255,255,0.9)' }]}>Sıradaki antrenman</Text>
+            <Text style={styles.cockpitDay}>{day.name}</Text>
+            <Text style={styles.cockpitSummary}>{summary}</Text>
+          </View>
+          <Grid style={{ borderWidth: 0, borderTopWidth: rules.strong }}>
+            {[
+              { label: 'Döngü', value: `${state.cycleIndex + 1}/${program.cycle.length}`, note: program.name.split(' · ')[0] },
+              { label: 'Kalori', value: `${Math.round(eaten.kcal)}`, note: `/ ${state.calorieTarget} kcal` },
+              { label: '7 gün ort.', value: avg === null ? '—' : avg.toFixed(1).replace('.', ','), note: 'kg' },
+              {
+                label: 'Haftalık',
+                value: trend.changeKg === null ? '—' : signed(trend.changeKg),
+                note: 'kg / hafta',
+              },
+            ].map((c) => (
+              <View key={c.label} style={styles.cockpitCell}>
+                <Text style={font.labelSm}>{c.label}</Text>
+                <Text style={[styles.cockpitValue, font.num]}>{c.value}</Text>
+                <Text style={font.tiny}>{c.note}</Text>
+              </View>
+            ))}
+          </Grid>
+          <View style={styles.cockpitMacros}>{macros}</View>
+          <View style={{ borderTopWidth: rules.strong, borderTopColor: colors.rule }}>
+            {day.kind === 'workout' ? (
+              <Button
+                title="Antrenmana başla →"
+                size="lg"
+                onPress={() => {
+                  if (!state.activeSession) state.startWorkout();
+                  go('workout');
+                }}
+              />
+            ) : (
+              <Button title="Dinlenmeyi tamamla →" size="lg" onPress={state.advanceCycle} />
+            )}
+            <Button title="Öğünleri işaretle" variant="ghost" size="lg" onPress={() => go('nutrition')} style={{ borderWidth: 0, borderTopWidth: rules.strong }} />
+          </View>
+        </View>
+      ) : (
+        <>
+          <Section strong={false} style={{ borderTopWidth: 0 }}>
+            <Label>Sıradaki antrenman</Label>
+            <Text style={styles.bigDay}>{day.name}</Text>
+            <Text style={font.small}>{summary}</Text>
+            <View style={styles.cycleLine}>
+              <Text style={font.tiny}>
+                Döngü{' '}
+                {program.cycle
+                  .map((id, i) => (i === state.cycleIndex ? `[${program.days[id].name}]` : program.days[id].name))
+                  .join(' → ')}
               </Text>
-              <ChevronRightIcon size={13} color={colors.textDim} />
+            </View>
+            {day.kind === 'workout' ? (
+              <Button
+                title="Antrenmana başla →"
+                size="lg"
+                onPress={() => {
+                  if (!state.activeSession) state.startWorkout();
+                  go('workout');
+                }}
+              />
+            ) : (
+              <Button title="Dinlenmeyi tamamla →" size="lg" onPress={state.advanceCycle} />
+            )}
+          </Section>
+
+          <Section>
+            <Label>Bugünün beslenmesi</Label>
+            <Row style={{ alignItems: 'baseline' }} gap={6}>
+              <Text style={[font.display, font.num]}>{Math.round(eaten.kcal).toLocaleString('tr-TR')}</Text>
+              <Text style={styles.of}>/ {state.calorieTarget.toLocaleString('tr-TR')} kcal</Text>
             </Row>
-          </Row>
-        </Pressable>
+            <View style={{ gap: spacing.md }}>{macros}</View>
+            <Button title="Öğünleri işaretle" variant="ghost" onPress={() => go('nutrition')} />
+          </Section>
 
-        <Row gap={spacing.lg} style={{ marginTop: spacing.md }}>
-          <Ring progress={state.calorieTarget > 0 ? eaten.kcal / state.calorieTarget : 0} />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.kcal, font.num]}>
-              {Math.round(eaten.kcal).toLocaleString('tr-TR')}
-              <Text style={styles.kcalOf}> / {state.calorieTarget.toLocaleString('tr-TR')} kcal</Text>
-            </Text>
-            <Text style={[font.small, { marginTop: 8, lineHeight: 18 }]}>
-              {Math.round(remaining).toLocaleString('tr-TR')} kcal kaldı
-              {nextMeal ? `\n${nextMeal.name} bekliyor` : '\nTüm öğünler tamam ✓'}
-            </Text>
-          </View>
-        </Row>
+          <Section>
+            <Label>Kilo · 7 günlük ortalama</Label>
+            <Row style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <View>
+                <Row gap={8} style={{ alignItems: 'baseline' }}>
+                  <Text style={[font.display, font.num]}>
+                    {avg === null ? '—' : avg.toFixed(1).replace('.', ',')}
+                  </Text>
+                  <Text style={styles.trend}>
+                    {trend.changeKg === null
+                      ? 'trend bekleniyor'
+                      : `${trend.changeKg >= 0 ? '↑' : '↓'} ${signed(trend.changeKg)} kg/hafta`}
+                  </Text>
+                </Row>
+                <Text style={font.small}>
+                  {lastEntry
+                    ? `Son ölçüm ${lastEntry.weight.toFixed(1).replace('.', ',')} kg`
+                    : 'Henüz ölçüm yok'}
+                </Text>
+              </View>
+              <Sparkline values={sparkValues} width={130} height={48} />
+            </Row>
 
-        <Row gap={spacing.sm} style={{ marginTop: spacing.md }}>
-          <MacroTile
-            label="Protein"
-            value={eaten.protein}
-            target={state.macroTargets.protein}
-            color={macroColors.protein}
-          />
-          <MacroTile
-            label="Karb"
-            value={eaten.carbs}
-            target={state.macroTargets.carbs}
-            color={macroColors.carbs}
-          />
-          <MacroTile
-            label="Yağ"
-            value={eaten.fat}
-            target={state.macroTargets.fat}
-            color={macroColors.fat}
-          />
-        </Row>
-      </Card>
+            {weighedToday ? (
+              <Text style={font.bodyStrong}>
+                Bugünün kilosu girildi: {state.weights[today].toFixed(1).replace('.', ',')} kg
+              </Text>
+            ) : (
+              <>
+                <Text style={font.small}>Bugün kilonu girmedin — aç karnına, tuvaletten sonra.</Text>
+                <Row gap={spacing.sm}>
+                  <View style={{ flex: 1 }}>
+                    <NumberStepper
+                      value={weightDraft}
+                      onChange={setWeightDraft}
+                      step={0.1}
+                      min={30}
+                      max={250}
+                      suffix="kg"
+                      decimals={1}
+                    />
+                  </View>
+                  <Button title="Kaydet" variant="ink" onPress={() => state.logWeight(today, weightDraft)} />
+                </Row>
+              </>
+            )}
+          </Section>
 
-      <Card tone={weighedToday ? undefined : 'warning'}>
-        <Row style={{ justifyContent: 'space-between' }}>
-          <Label>Kilo · 7 gün ortalama</Label>
-          {trend.changeKg === null ? (
-            <Text style={font.tiny}>{weighedToday ? 'Bugün girildi ✓' : 'Bugün girilmedi'}</Text>
-          ) : (
-            <Badge
-              label={inRange ? 'HEDEF ARALIKTA' : trend.changeKg < 0.25 ? 'HEDEFİN ALTINDA' : 'HEDEFİN ÜSTÜNDE'}
-              color={inRange ? colors.success : colors.warning}
-            />
-          )}
-        </Row>
+          {lastSession ? (
+            <Section>
+              <Label>Son antrenman</Label>
+              <Row style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <Text style={font.h3}>{dayById(lastSession.dayId)?.name}</Text>
+                <Text style={[font.small, font.num]}>{lastSession.date}</Text>
+              </Row>
+              <Text style={[font.small, font.num]}>
+                {sessionSetCount(lastSession)} set ·{' '}
+                {Math.round(sessionVolume(lastSession)).toLocaleString('tr-TR')} kg hacim
+              </Text>
+            </Section>
+          ) : null}
 
-        <Row style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
-          <View>
-            <Text style={[styles.kcal, font.num, { fontSize: 34 }]}>
-              {avg === null ? '—' : avg.toFixed(1).replace('.', ',')}
-              <Text style={[styles.kcalOf, { fontSize: 15 }]}> kg</Text>
-            </Text>
-            <Text
-              style={{
-                fontSize: 12.5,
-                fontWeight: '700',
-                marginTop: 6,
-                color:
-                  trend.changeKg === null
-                    ? colors.textDim
-                    : inRange
-                    ? colors.success
-                    : colors.warning,
-              }}
-            >
-              {trend.changeKg === null
-                ? 'Trend için veri topluyor'
-                : `${trend.changeKg >= 0 ? '▲' : '▼'} ${signed(trend.changeKg)} kg / hafta`}
-            </Text>
-          </View>
-          <Sparkline values={sparkValues} width={140} height={50} />
-        </Row>
-
-        {!weighedToday ? (
-          <>
-            <NumberStepper
-              value={weightDraft}
-              onChange={setWeightDraft}
-              step={0.1}
-              min={30}
-              max={250}
-              suffix="kg"
-              decimals={1}
-            />
-            <Button title="Sabah kilosunu kaydet" onPress={() => state.logWeight(today, weightDraft)} />
-          </>
-        ) : null}
-      </Card>
-
-      {lastSession ? (
-        <Card>
-          <Row style={{ justifyContent: 'space-between' }}>
-            <Label>Son antrenman</Label>
-            <Text style={font.tiny}>{lastSession.date}</Text>
-          </Row>
-          <Text style={font.h3}>{dayById(lastSession.dayId)?.name}</Text>
-          <Row gap={spacing.md}>
-            <Text style={[font.small, font.num]}>{sessionSetCount(lastSession)} set</Text>
-            <Text style={[font.small, font.num]}>
-              {Math.round(sessionVolume(lastSession)).toLocaleString('tr-TR')} kg hacim
-            </Text>
-          </Row>
-        </Card>
-      ) : null}
-
-      <SectionTitle>Günü manuel seç</SectionTitle>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <Row gap={spacing.sm}>
-          {program.cycle.map((id: string, i: number) => (
-            <Chip
-              key={`${id}-${i}`}
-              label={`${i + 1}. ${program.days[id].name}`}
-              active={state.cycleIndex === i}
-              onPress={() => state.setCycleIndex(i)}
-            />
-          ))}
-        </Row>
-      </ScrollView>
+          <Section>
+            <Label>Günü manuel seç</Label>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <Row gap={spacing.sm}>
+                {program.cycle.map((id, i) => (
+                  <Chip
+                    key={`${id}-${i}`}
+                    label={`${i + 1}. ${program.days[id].name}`}
+                    active={state.cycleIndex === i}
+                    onPress={() => state.setCycleIndex(i)}
+                  />
+                ))}
+              </Row>
+            </ScrollView>
+          </Section>
+        </>
+      )}
     </Screen>
   );
 };
 
-const styles = {
-  heroTitle: { fontSize: 38, fontWeight: '800' as const, color: '#fff', letterSpacing: -1.3, marginTop: 5 },
-  heroSub: { fontSize: 12.5, color: 'rgba(255,255,255,0.86)', marginTop: 5, fontWeight: '500' as const },
-  dot: { height: 5, flex: 1, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.3)' },
-  dotOn: { backgroundColor: '#fff' },
-  link: { fontSize: 11.5, fontWeight: '700' as const, color: colors.textDim },
-  kcal: { fontSize: 32, fontWeight: '800' as const, color: colors.text, letterSpacing: -1.1 },
-  kcalOf: { fontSize: 13, color: colors.textDim, fontWeight: '600' as const, letterSpacing: 0 },
-};
+const styles = StyleSheet.create({
+  bigDay: { fontFamily: fonts.black, fontSize: 44, letterSpacing: -1.4, color: colors.ink, lineHeight: 46 },
+  cycleLine: { borderTopWidth: rules.light, borderTopColor: colors.ruleLight, paddingTop: 10 },
+  of: { fontFamily: fonts.bold, fontSize: 17, color: colors.muted },
+  trend: { fontFamily: fonts.bold, fontSize: 15, color: colors.accentInk },
+  cockpit: { borderWidth: rules.strong, borderColor: colors.ink, marginTop: spacing.lg },
+  cockpitHead: { backgroundColor: colors.accent, padding: spacing.xl },
+  cockpitDay: {
+    fontFamily: fonts.black,
+    fontSize: 54,
+    letterSpacing: -2,
+    color: colors.onAccent,
+    lineHeight: 56,
+    marginTop: 6,
+  },
+  cockpitSummary: { fontFamily: fonts.medium, fontSize: 15, color: colors.onAccent, marginTop: 8 },
+  cockpitCell: { backgroundColor: colors.bg, padding: spacing.md, flexGrow: 1, flexBasis: 140, gap: 2 },
+  cockpitValue: { fontFamily: fonts.black, fontSize: 24, letterSpacing: -0.5, color: colors.ink },
+  cockpitMacros: {
+    borderTopWidth: rules.strong,
+    borderTopColor: colors.rule,
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+});
