@@ -121,7 +121,6 @@ export type Settings = {
   restSeconds: number;
   compoundIncrement: number;
   isolationIncrement: number;
-  restDayCarbReduction: number;   // g of rice removed per meal on rest days
   proteinFloor: number;
   autoAdjustEnabled: boolean;
 };

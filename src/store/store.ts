@@ -3,8 +3,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { CARB_SOURCE_ID, DEFAULT_FOODS, DEFAULT_PLAN } from '../data/foods';
-import { DEFAULT_PROGRAM_ID, getProgram, cycleDayOf } from '../data/program';
-import { addDays, daysBetween, todayKey } from '../logic/date';
+import { DEFAULT_PROGRAM_ID, cycleDayOf, getProgram, syncCustomContent } from '../data/program';
+import { addDays, daysBetween, lastSunday, todayKey } from '../logic/date';
 import {
   buildDayMeals,
   diffPlans,
@@ -20,9 +20,11 @@ import {
   Adjustment,
   DayLog,
   EnergyTargets,
+  Exercise,
   Food,
   Meal,
   Profile,
+  Program,
   Settings,
   SetLog,
   WorkoutSession,
@@ -34,7 +36,6 @@ const DEFAULT_SETTINGS: Settings = {
   restSeconds: 120,
   compoundIncrement: 2.5,
   isolationIncrement: 1.25,
-  restDayCarbReduction: 60,
   proteinFloor: 165,
   autoAdjustEnabled: true,
 };
@@ -62,6 +63,9 @@ type State = {
   settings: Settings;
 
   programId: string;
+  /** Kullanıcının kendi yazdığı programlar ve hareketler. */
+  customPrograms: Record<string, Program>;
+  customExercises: Record<string, Exercise>;
   cycleIndex: number;
   sessions: WorkoutSession[];
   activeSession: WorkoutSession | null;
@@ -83,6 +87,9 @@ type Actions = {
 
   // Antrenman
   setProgram: (id: string) => void;
+  saveCustomProgram: (program: Program) => void;
+  deleteCustomProgram: (id: string) => void;
+  addCustomExercise: (exercise: Exercise) => void;
   setCycleIndex: (i: number) => void;
   advanceCycle: () => void;
   startWorkout: (dayId?: string) => void;
@@ -134,6 +141,8 @@ const initialState = (): State => ({
   profile: DEFAULT_PROFILE,
   settings: DEFAULT_SETTINGS,
   programId: DEFAULT_PROGRAM_ID,
+  customPrograms: {},
+  customExercises: {},
   cycleIndex: 0,
   sessions: [],
   activeSession: null,
@@ -159,13 +168,7 @@ export const dayLogFor = (state: State, date: string): DayLog => {
   return {
     date,
     isTraining,
-    meals: buildDayMeals(
-      state.plan,
-      isTraining,
-      state.settings.restDayCarbReduction,
-      state.foods,
-      state.settings.proteinFloor
-    ),
+    meals: buildDayMeals(state.plan),
   };
 };
 
@@ -178,6 +181,37 @@ export const useStore = create<Store>()(
 
       // ---------- Antrenman ----------
       setProgram: (id) => set({ programId: getProgram(id).id, cycleIndex: 0, activeSession: null }),
+
+      saveCustomProgram: (program) =>
+        set((s) => {
+          const customPrograms = { ...s.customPrograms, [program.id]: program };
+          syncCustomContent(customPrograms, s.customExercises);
+          // Düzenlenen program aktifse döngü indeksi taşabilir; başa sar.
+          const cycleIndex =
+            s.programId === program.id && s.cycleIndex >= program.cycle.length ? 0 : s.cycleIndex;
+          return { customPrograms, cycleIndex };
+        }),
+
+      deleteCustomProgram: (id) =>
+        set((s) => {
+          const customPrograms = { ...s.customPrograms };
+          delete customPrograms[id];
+          syncCustomContent(customPrograms, s.customExercises);
+          const active = s.programId === id;
+          return {
+            customPrograms,
+            programId: active ? DEFAULT_PROGRAM_ID : s.programId,
+            cycleIndex: active ? 0 : s.cycleIndex,
+            activeSession: active ? null : s.activeSession,
+          };
+        }),
+
+      addCustomExercise: (exercise) =>
+        set((s) => {
+          const customExercises = { ...s.customExercises, [exercise.id]: exercise };
+          syncCustomContent(s.customPrograms, customExercises);
+          return { customExercises };
+        }),
 
       setCycleIndex: (i) =>
         set((s) => {
@@ -296,13 +330,7 @@ export const useStore = create<Store>()(
       setDayTraining: (date, isTraining) =>
         set((s) => {
           const log = dayLogFor(s, date);
-          const rebuilt = buildDayMeals(
-            s.plan,
-            isTraining,
-            s.settings.restDayCarbReduction,
-            s.foods,
-            s.settings.proteinFloor
-          );
+          const rebuilt = buildDayMeals(s.plan);
           return {
             dayLogs: {
               ...s.dayLogs,
@@ -396,13 +424,7 @@ export const useStore = create<Store>()(
               ...s.dayLogs,
               [date]: {
                 ...log,
-                meals: buildDayMeals(
-                  s.plan,
-                  log.isTraining,
-                  s.settings.restDayCarbReduction,
-                  s.foods,
-                  s.settings.proteinFloor
-                ),
+                meals: buildDayMeals(s.plan),
               },
             },
           };
@@ -486,14 +508,20 @@ export const useStore = create<Store>()(
           return { weights };
         }),
 
+      /**
+       * Haftalık değerlendirme pazar günü açılır ve cevaplanana kadar durur:
+       * o haftaya ait bir öneri daha önce cevaplanmadıysa yenisi üretilir.
+       */
       checkAdjustment: () => {
         const s = get();
         if (!s.settings.autoAdjustEnabled || s.pendingAdjustment) return;
         const trend = weeklyTrend(s.weights);
         if (!trend.ready || trend.changeKg === null || !trend.endDate) return;
 
+        const sunday = lastSunday();
         const last = s.adjustments[s.adjustments.length - 1];
-        if (last && daysBetween(last.date, trend.endDate) < 7) return;
+        // Bu pazarın değerlendirmesi zaten cevaplandıysa tekrar sorma.
+        if (last && daysBetween(last.date, sunday) <= 0) return;
 
         const decision = decideAdjustment(trend.changeKg);
         const grams = decision.kcalDelta === 0 ? 0 : kcalToCarbGrams(decision.kcalDelta, s.foods);
@@ -509,7 +537,7 @@ export const useStore = create<Store>()(
         const toKcal = s.calorieTarget + decision.kcalDelta;
 
         const changeText = `${trend.changeKg >= 0 ? '' : '−'}${Math.abs(trend.changeKg).toFixed(2).replace('.', ',')} kg`;
-        const head = `Bu hafta ortalama ${changeText} değiştin. ${decision.reason}`;
+        const head = `Pazar değerlendirmesi: bu hafta ortalama ${changeText} değiştin. ${decision.reason}`;
         const body =
           decision.kcalDelta === 0
             ? 'Kalori hedefinde değişiklik yapmıyorum.'
@@ -517,7 +545,7 @@ export const useStore = create<Store>()(
 
         const adjustment: Adjustment = {
           id: uid(),
-          date: trend.endDate,
+          date: sunday,
           weeklyChangeKg: trend.changeKg,
           avgNow: trend.avgNow as number,
           avgPrev: trend.avgPrev as number,
@@ -586,6 +614,8 @@ export const useStore = create<Store>()(
             profile: s.profile,
             settings: s.settings,
             programId: s.programId,
+            customPrograms: s.customPrograms,
+            customExercises: s.customExercises,
             cycleIndex: s.cycleIndex,
             sessions: s.sessions,
             foods: s.foods,
@@ -609,7 +639,9 @@ export const useStore = create<Store>()(
           set({
             profile: { ...base.profile, ...(data.profile ?? {}) },
             settings: { ...base.settings, ...(data.settings ?? {}) },
-            programId: getProgram(data.programId ?? DEFAULT_PROGRAM_ID).id,
+            customPrograms: data.customPrograms ?? {},
+            customExercises: data.customExercises ?? {},
+            programId: data.programId ?? DEFAULT_PROGRAM_ID,
             cycleIndex: typeof data.cycleIndex === 'number' ? data.cycleIndex : 0,
             sessions: Array.isArray(data.sessions) ? data.sessions : [],
             foods: { ...base.foods, ...(data.foods ?? {}) },
@@ -623,17 +655,21 @@ export const useStore = create<Store>()(
             pendingAdjustment: null,
             activeSession: null,
           });
+          syncCustomContent(data.customPrograms ?? {}, data.customExercises ?? {});
           return { ok: true };
         } catch (e) {
           return { ok: false, error: 'JSON okunamadı. Dosyanın tamamını yapıştırdığından emin ol.' };
         }
       },
 
-      resetAll: () => set({ ...initialState(), hydrated: true }),
+      resetAll: () => {
+        syncCustomContent({}, {});
+        set({ ...initialState(), hydrated: true });
+      },
     }),
     {
       name: 'hipertrofi-store-v1',
-      version: 4,
+      version: 5,
       storage: createJSONStorage(() => AsyncStorage),
       /**
        * v3: öğün planı protein 165 g / yağ 72 g hedefine göre yeniden kuruldu,
@@ -641,16 +677,20 @@ export const useStore = create<Store>()(
        * (günlük kaydı ve kalori ayarı yoksa) yeni varsayılanlar uygulanır;
        * dokunduysa mevcut planı bozmamak için olduğu gibi bırakılır.
        * v4: profile cinsiyet/aktivite/hedef alanları ve program seçimi eklendi.
+       * v5: dinlenme günü kalori indirimi kaldırıldı (kalori her gün sabit) ve
+       *     kullanıcının kendi programları / hareketleri için alanlar eklendi.
        */
       migrate: (persisted, version) => {
         let state = persisted as Partial<State> | undefined;
         if (!state) return persisted as Store;
-        if (version < 4) {
+        if (version < 5) {
           const base = initialState();
           state = {
             ...state,
             profile: { ...base.profile, ...(state.profile ?? {}) },
-            programId: getProgram(state.programId ?? DEFAULT_PROGRAM_ID).id,
+            programId: state.programId ?? DEFAULT_PROGRAM_ID,
+            customPrograms: state.customPrograms ?? {},
+            customExercises: state.customExercises ?? {},
           };
         }
         if (version < 3) {
@@ -668,7 +708,6 @@ export const useStore = create<Store>()(
               settings: {
                 ...base.settings,
                 ...(state.settings ?? {}),
-                restDayCarbReduction: base.settings.restDayCarbReduction,
               },
             } as Store;
           }
@@ -680,6 +719,8 @@ export const useStore = create<Store>()(
         return rest as Store;
       },
       onRehydrateStorage: () => (state) => {
+        // Kayıt defterini store'daki özel içerikle eşitle, sonra ekranları aç.
+        syncCustomContent(state?.customPrograms ?? {}, state?.customExercises ?? {});
         state?.setHydrated(true);
       },
     }

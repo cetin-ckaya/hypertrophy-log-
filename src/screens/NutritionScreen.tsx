@@ -17,8 +17,9 @@ import {
   Section,
   Segmented,
 } from '../components/ui';
-import { addDays, formatRelative, todayKey } from '../logic/date';
+import { addDays, formatRelative, formatShort, nextSunday, todayKey } from '../logic/date';
 import { eatenMacros, itemMacros, mealMacros, planMacros } from '../logic/nutrition';
+import { decideAdjustment, weeklyTrend } from '../logic/weight';
 import { dayLogFor, useStore } from '../store/store';
 import { colors, font, fonts, macroColors, rules, spacing } from '../theme';
 import { Food } from '../types';
@@ -35,7 +36,7 @@ export const NutritionScreen = () => {
 
   const log = useMemo(
     () => dayLogFor(state, date),
-    [state.dayLogs, state.plan, state.settings.restDayCarbReduction, state.cycleIndex, date]
+    [state.dayLogs, state.plan, state.cycleIndex, date]
   );
   const eaten = eatenMacros(log.meals, state.foods);
   const planTotal = planMacros(state.plan, state.foods);
@@ -67,7 +68,7 @@ export const NutritionScreen = () => {
         style={{ borderTopWidth: 0 }}
       />
 
-      {state.pendingAdjustment ? <AdjustmentCard /> : null}
+      {state.pendingAdjustment ? <AdjustmentCard /> : <WeeklyOutlook />}
 
       {sub === 'diary' ? (
         <>
@@ -238,9 +239,8 @@ export const NutritionScreen = () => {
 
           <Section>
             <Text style={font.small}>
-              Tüm gramajlar çiğ / kuru ölçüdür. Dinlenme gününde 1. öğün dışındaki öğünlerin pirinci{' '}
-              {state.settings.restDayCarbReduction} g düşer; protein {state.settings.proteinFloor} g'ın
-              altına inerse tavuk gramajı dengelenir.
+              Tüm gramajlar çiğ / kuru ölçüdür. Kalori her gün sabittir — antrenman ve dinlenme
+              gününde aynı plan uygulanır.
             </Text>
             {mode === 'day' ? (
               <Button title="Günü plandan sıfırla" variant="ghost" onPress={() => state.resetDayFromPlan(date)} />
@@ -280,6 +280,63 @@ export const NutritionScreen = () => {
         </>
       )}
     </Screen>
+  );
+};
+
+/**
+ * Bekleyen öneri yokken haftalık değerlendirmenin nerede olduğunu gösterir:
+ * mevcut trend, önerinin yönü ve bir sonraki pazar.
+ */
+const WeeklyOutlook = () => {
+  const weights = useStore((s) => s.weights);
+  const enabled = useStore((s) => s.settings.autoAdjustEnabled);
+  const target = useStore((s) => s.calorieTarget);
+  const trend = weeklyTrend(weights);
+
+  if (!enabled) return null;
+
+  const due = nextSunday();
+  const isSunday = due === todayKey();
+
+  if (!trend.ready || trend.changeKg === null) {
+    return (
+      <Section strong={false} style={{ borderTopWidth: 0 }}>
+        <Label>Haftalık kalori değerlendirmesi</Label>
+        <Text style={font.body}>
+          Değerlendirme için iki ardışık haftada en az 4'er sabah ölçümü gerekiyor. Şu an{' '}
+          {trend.countNow} / {trend.countPrev}.
+        </Text>
+        <Text style={font.small}>
+          Ölçümler tamamlanınca {isSunday ? 'bugün' : formatShort(due)} pazar günü önerisi burada çıkar.
+        </Text>
+      </Section>
+    );
+  }
+
+  const decision = decideAdjustment(trend.changeKg);
+  const change = `${trend.changeKg >= 0 ? '+' : '−'}${Math.abs(trend.changeKg)
+    .toFixed(2)
+    .replace('.', ',')} kg`;
+  const direction =
+    decision.kcalDelta === 0
+      ? 'Kaloriyi sabit bırak.'
+      : decision.kcalDelta > 0
+      ? `Kaloriyi artırman gerekiyor (${target} → ${target + decision.kcalDelta} kcal).`
+      : `Kaloriyi azaltman gerekiyor (${target} → ${target + decision.kcalDelta} kcal).`;
+
+  return (
+    <Section strong={false} style={{ borderTopWidth: 0 }}>
+      <Label>Haftalık kalori değerlendirmesi</Label>
+      <Text style={[font.body, { lineHeight: 22 }]}>
+        Son 7 günün ortalaması önceki haftaya göre <Text style={font.bodyStrong}>{change}</Text>{' '}
+        değişti — {decision.reason.toLocaleLowerCase('tr')} {direction}
+      </Text>
+      <Text style={font.small}>
+        {isSunday
+          ? 'Bugün pazar — öneri kartı ölçümün girilince burada açılır.'
+          : `Öneri ${formatShort(due)} pazar günü burada onayına çıkar.`}
+      </Text>
+    </Section>
   );
 };
 

@@ -1,4 +1,4 @@
-import { EXERCISES } from '../data/program';
+import { exerciseById } from '../data/program';
 import { SessionExercise, SetLog, Settings, WorkoutSession } from '../types';
 import { fromKey, toKey } from './date';
 
@@ -105,7 +105,7 @@ export const didOverload = (
 };
 
 export const increment = (exerciseId: string, settings: Settings): number => {
-  const meta = EXERCISES[exerciseId];
+  const meta = exerciseById(exerciseId);
   return meta && meta.type === 'compound'
     ? settings.compoundIncrement
     : settings.isolationIncrement;
@@ -132,7 +132,6 @@ export const buildSuggestion = (
   const last = history[0];
   const sets = loggedSets(last.exercise);
   const weight = topWeight(last.exercise.sets);
-  const step = increment(exerciseId, settings);
 
   const previous = history[1] ?? null;
   const overload = previous ? didOverload(last.exercise, previous.exercise) : null;
@@ -147,12 +146,12 @@ export const buildSuggestion = (
   const hitTop = sets.length > 0 && sets.every((s) => s.reps >= repMax);
 
   if (hitTop) {
-    const target = weight + step;
+    // Ne kadar artıracağına kullanıcı karar verir; uyarı miktar söylemez.
     return {
       kind: 'increase',
-      targetWeight: target,
+      targetWeight: weight,
       progressed: overload !== null,
-      text: `Tüm setlerde ${repMax} tekrara ulaştın → ${trimNum(target)} kg dene (+${trimNum(step)} kg).`,
+      text: `Tüm setlerde ${repMax} tekrara ulaştın → ağırlığı artır.`,
     };
   }
 
@@ -162,9 +161,9 @@ export const buildSuggestion = (
       kind: 'rep_progress',
       targetWeight: weight,
       progressed: true,
-      text: `Overload ✓ — aynı ${trimNum(weight)} kg'da set başına +${trimNum(
+      text: `Overload ✓ — aynı ağırlıkta set başına +${trimNum(
         Math.round(gain * 10) / 10
-      )} tekrar yaptın. ${trimNum(weight)} kg'da kal, tüm setlerde ${repMax} tekrara ulaşınca ağırlığı artır.`,
+      )} tekrar yaptın. Aynı ağırlıkta kal, tüm setlerde ${repMax} tekrara ulaşınca artır.`,
     };
   }
 
@@ -173,7 +172,7 @@ export const buildSuggestion = (
       kind: 'rep_progress',
       targetWeight: weight,
       progressed: true,
-      text: `Overload ✓ — ağırlığı ${trimNum(weight)} kg'a çıkardın. Burada tekrarları ${repMax}'e taşımaya çalış.`,
+      text: `Overload ✓ — ağırlığı artırdın. Burada tekrarları ${repMax}'e taşımaya çalış.`,
     };
   }
 
@@ -182,14 +181,14 @@ export const buildSuggestion = (
       kind: 'stall',
       targetWeight: weight,
       progressed: false,
-      text: `3 antrenmandır ${trimNum(weight)} kg'da ne ağırlık ne tekrar arttı. Deload (%10 düşür) veya form/dinlenme kontrolü yap.`,
+      text: `3 antrenmandır ne ağırlık ne tekrar arttı. Deload veya form / dinlenme kontrolü yap.`,
     };
 
   return {
     kind: 'hold',
     targetWeight: weight,
     progressed: false,
-    text: `${trimNum(weight)} kg'da kal — ağırlığı artırmadan tekrar eklemek de overload sayılır. Hedef üst sınır ${repMax} tekrar.`,
+    text: `Aynı ağırlıkta kal — ağırlık artırmadan tekrar eklemek de overload sayılır. Hedef üst sınır ${repMax} tekrar.`,
   };
 };
 
@@ -209,7 +208,7 @@ export const personalRecords = (sessions: WorkoutSession[]): PersonalRecord[] =>
   completed(sessions).forEach((session) => {
     session.exercises.forEach((ex) => {
       loggedSets(ex).forEach((set) => {
-        const meta = EXERCISES[ex.exerciseId];
+        const meta = exerciseById(ex.exerciseId);
         if (!meta) return;
         const current =
           map.get(ex.exerciseId) ||
@@ -277,7 +276,7 @@ export const weeklyVolume = (sessions: WorkoutSession[]): WeeklyVolume[] => {
     const week = weekStart(session.date);
     const entry = map.get(week) || { week, total: 0, byGroup: {} };
     session.exercises.forEach((ex) => {
-      const meta = EXERCISES[ex.exerciseId];
+      const meta = exerciseById(ex.exerciseId);
       if (!meta) return;
       const vol = setVolume(ex.sets);
       entry.total += vol;

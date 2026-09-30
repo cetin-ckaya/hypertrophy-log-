@@ -35,24 +35,6 @@ export const planMacros = (meals: Meal[], foods: Record<string, Food>): Macros =
 export const eatenMacros = (meals: DayMeal[], foods: Record<string, Food>): Macros =>
   sumMacros(meals.filter((m) => m.eaten).map((m) => mealMacros(m, foods)));
 
-/**
- * Dinlenme gününde ilk öğün dışındaki öğünlerin karbonhidrat kaynağı düşürülür
- * (varsayılan: pirinç 120 g → 85 g).
- */
-export const applyRestDay = (meals: Meal[], reduction: number): Meal[] =>
-  meals.map((meal, index) => {
-    if (index === 0) return meal;
-    return {
-      ...meal,
-      items: meal.items.map((item) =>
-        item.foodId === CARB_SOURCE_ID
-          ? { ...item, amount: Math.max(0, Math.round(item.amount - reduction)) }
-          : item
-      ),
-    };
-  });
-
-/** Kalori değişimini karbonhidrat (pirinç) gramajına çevirir: 1 g pirinç ≈ 3,6 kcal. */
 export const kcalToCarbGrams = (kcalDelta: number, foods: Record<string, Food>): number => {
   const food = foods[CARB_SOURCE_ID];
   const per100 = food ? food.kcal : 360;
@@ -125,25 +107,15 @@ export const enforceProteinFloor = (
 };
 
 /**
- * Bir günün öğünlerini plandan türetir. Dinlenme gününde karbonhidrat düşer;
- * bu yüzden protein tabanının altına inilirse tavuk gramajı dengelenir.
+ * Bir günün öğünlerini plandan türetir.
+ * Kalori her gün sabittir — dinlenme gününde de plan aynen uygulanır.
  */
-export const buildDayMeals = (
-  plan: Meal[],
-  isTraining: boolean,
-  reduction: number,
-  foods: Record<string, Food>,
-  proteinFloor: number
-): DayMeal[] => {
-  const base = isTraining
-    ? plan
-    : enforceProteinFloor(applyRestDay(plan, reduction), foods, proteinFloor);
-  return base.map((m) => ({
+export const buildDayMeals = (plan: Meal[]): DayMeal[] =>
+  plan.map((m) => ({
     ...m,
     items: m.items.map((i) => ({ ...i })),
     eaten: false,
   }));
-};
 
 export const diffPlans = (before: Meal[], after: Meal[]): PlanDiff[] => {
   const out: PlanDiff[] = [];

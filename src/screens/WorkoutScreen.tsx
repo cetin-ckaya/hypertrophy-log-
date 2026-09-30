@@ -14,7 +14,7 @@ import {
   Segmented,
   Tag,
 } from '../components/ui';
-import { EXERCISES, GROUP_NAMES, cycleDayOf, dayById, getProgram } from '../data/program';
+import { GROUP_NAMES, cycleDayOf, dayById, exerciseById, getProgram } from '../data/program';
 import { formatRelative, formatShort } from '../logic/date';
 import {
   buildSuggestion,
@@ -114,7 +114,7 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
             />
 
             {active.exercises.map((ex, exIndex) => {
-              const meta = EXERCISES[ex.exerciseId];
+              const meta = exerciseById(ex.exerciseId);
               const previous = lastPerformance(state.sessions, ex.exerciseId, active.dayId);
               const suggestion = buildSuggestion(
                 state.sessions,
