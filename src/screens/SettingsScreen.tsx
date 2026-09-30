@@ -18,7 +18,8 @@ import {
   StatTile,
 } from '../components/ui';
 import { ChevronLeftIcon } from '../components/icons';
-import { PROGRAMS } from '../data/program';
+import { ProgramEditorScreen } from './ProgramEditorScreen';
+import { allPrograms, isCustomProgram } from '../data/program';
 import { todayKey } from '../logic/date';
 import { ACTIVITIES, GOALS, SEXES, activityOf, computeTargets, goalOf } from '../logic/energy';
 import { latestAverage } from '../logic/weight';
@@ -32,6 +33,8 @@ export const SettingsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
   const [importText, setImportText] = useState('');
   const [showImport, setShowImport] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  /** null = liste, {id:null} = yeni program, {id} = düzenleme */
+  const [editing, setEditing] = useState<{ id: string | null } | null>(null);
 
   const avgWeight = latestAverage(state.weights);
   const targets = computeTargets(state.profile, avgWeight ?? state.profile.startWeightKg);
@@ -101,6 +104,9 @@ export const SettingsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
     }
   };
 
+  if (editing)
+    return <ProgramEditorScreen programId={editing.id} onClose={() => setEditing(null)} />;
+
   return (
     <Screen
       kicker="Ayarlar"
@@ -112,8 +118,9 @@ export const SettingsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
       }
     >
       <SectionTitle>Program</SectionTitle>
-      {Object.values(PROGRAMS).map((program) => {
+      {Object.values(allPrograms()).map((program) => {
         const active = state.programId === program.id;
+        const own = isCustomProgram(program.id);
         return (
           <Card key={program.id} tone={active ? 'accent' : undefined}>
             <Row style={{ justifyContent: 'space-between' }}>
@@ -126,22 +133,49 @@ export const SettingsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
                 .map((id) => program.days[id].name.replace(/^Gün \d+ · /, ''))
                 .join(' → ')}
             </Text>
-            {!active ? (
-              <Button
-                title="Bu programa geç"
-                variant="ghost"
-                onPress={() => {
-                  state.setProgram(program.id);
-                  setStatus({
-                    kind: 'ok',
-                    text: `${program.name} etkin. Döngü başa alındı; geçmiş kayıtların korunuyor.`,
-                  });
-                }}
-              />
-            ) : null}
+            <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
+              {!active ? (
+                <Button
+                  title="Bu programa geç"
+                  variant="ghost"
+                  style={{ flex: 1 }}
+                  onPress={() => {
+                    state.setProgram(program.id);
+                    setStatus({
+                      kind: 'ok',
+                      text: `${program.name} etkin. Döngü başa alındı; geçmiş kayıtların korunuyor.`,
+                    });
+                  }}
+                />
+              ) : null}
+              {own ? (
+                <>
+                  <Button
+                    title="Düzenle"
+                    variant="ghost"
+                    style={{ flex: 1 }}
+                    onPress={() => setEditing({ id: program.id })}
+                  />
+                  <Button
+                    title="Sil"
+                    variant="ghost"
+                    style={{ flex: 1 }}
+                    onPress={() => {
+                      state.deleteCustomProgram(program.id);
+                      setStatus({ kind: 'ok', text: `${program.name} silindi.` });
+                    }}
+                  />
+                </>
+              ) : null}
+            </Row>
           </Card>
         );
       })}
+      <Button title="+ Kendi programını yaz" onPress={() => setEditing({ id: null })} />
+      <Text style={font.tiny}>
+        Kendi programında günleri, sıralamayı, hareketleri ve set / tekrar aralıklarını sen
+        belirlersin; listede olmayan hareketi de ekleyebilirsin.
+      </Text>
 
       <SectionTitle>Antrenman</SectionTitle>
       <Card>
@@ -212,18 +246,9 @@ export const SettingsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
           Kalori düşerken protein bu değerin altına inerse tavuk gramajı otomatik artırılır.
         </Text>
 
-        <Text style={[font.small, { marginTop: spacing.sm }]}>
-          Dinlenme gününde öğün başına pirinç düşüşü
+        <Text style={[font.tiny, { marginTop: spacing.sm }]}>
+          Kalori her gün sabittir; dinlenme gününde de plan aynen uygulanır.
         </Text>
-        <NumberStepper
-          value={state.settings.restDayCarbReduction}
-          onChange={(v) => state.updateSettings({ restDayCarbReduction: Math.round(v) })}
-          step={5}
-          min={0}
-          max={200}
-          decimals={0}
-          suffix="g"
-        />
       </Card>
 
       <SectionTitle>Profil</SectionTitle>

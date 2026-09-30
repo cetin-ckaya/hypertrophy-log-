@@ -42,6 +42,20 @@ export const formatRelative = (key: string): string => {
   return formatShort(key);
 };
 
+/** Bugün dahil, geçmişteki en yakın pazar günü. */
+export const lastSunday = (from: string = todayKey()): string => {
+  const d = fromKey(from);
+  d.setDate(d.getDate() - d.getDay());
+  return toKey(d);
+};
+
+/** Bir sonraki pazar (bugün pazarsa bugün). */
+export const nextSunday = (from: string = todayKey()): string => {
+  const d = fromKey(from);
+  d.setDate(d.getDate() + ((7 - d.getDay()) % 7));
+  return toKey(d);
+};
+
 export const formatDuration = (ms: number): string => {
   const total = Math.max(0, Math.round(ms / 1000));
   const h = Math.floor(total / 3600);

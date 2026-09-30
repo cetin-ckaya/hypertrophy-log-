@@ -259,11 +259,39 @@ export const PROGRAMS: Record<string, Program> = {
 
 export const DEFAULT_PROGRAM_ID = 'hipertrofi';
 
-export const getProgram = (id: string): Program => PROGRAMS[id] ?? PROGRAMS[DEFAULT_PROGRAM_ID];
+/**
+ * Kullanıcının kendi yazdığı program ve hareketler.
+ * Tek yazar store'dur (hydrate ve her değişiklikte senkronlar); buradaki
+ * kayıt defteri sayesinde çağrı noktalarının imzası değişmeden hem hazır
+ * hem özel içerik aynı yerden çözülür.
+ */
+let customPrograms: Record<string, Program> = {};
+let customExercises: Record<string, Exercise> = {};
+
+export const syncCustomContent = (
+  programs: Record<string, Program>,
+  exercises: Record<string, Exercise>
+) => {
+  customPrograms = programs ?? {};
+  customExercises = exercises ?? {};
+};
+
+export const allPrograms = (): Record<string, Program> => ({ ...PROGRAMS, ...customPrograms });
+
+export const isCustomProgram = (id: string): boolean => Boolean(customPrograms[id]);
+
+/** Hareket kataloğu: hazır hareketler + kullanıcının eklediği hareketler. */
+export const exerciseById = (id: string): Exercise | undefined =>
+  customExercises[id] ?? EXERCISES[id];
+
+export const allExercises = (): Record<string, Exercise> => ({ ...EXERCISES, ...customExercises });
+
+export const getProgram = (id: string): Program =>
+  allPrograms()[id] ?? PROGRAMS[DEFAULT_PROGRAM_ID];
 
 /** Gün id'si hangi programa aitse oradan çözülür (geçmiş kayıtlar için). */
 export const dayById = (dayId: string): TrainingDay | undefined => {
-  for (const program of Object.values(PROGRAMS)) {
+  for (const program of Object.values(allPrograms())) {
     if (program.days[dayId]) return program.days[dayId];
   }
   return undefined;
@@ -271,7 +299,7 @@ export const dayById = (dayId: string): TrainingDay | undefined => {
 
 export const cycleDayOf = (programId: string, index: number): TrainingDay => {
   const program = getProgram(programId);
-  return program.days[program.cycle[index % program.cycle.length]];
+  return program.days[program.cycle[index % program.cycle.length]] ?? REST;
 };
 
 export const GROUP_NAMES: Record<string, string> = {

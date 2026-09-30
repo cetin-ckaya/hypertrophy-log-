@@ -15,7 +15,7 @@ import {
   Section,
   StatTile,
 } from '../components/ui';
-import { EXERCISES, GROUP_NAMES } from '../data/program';
+import { GROUP_NAMES, exerciseById } from '../data/program';
 import { formatRelative, formatShort, todayKey } from '../logic/date';
 import { eatenMacros } from '../logic/nutrition';
 import { exerciseProgress, sessionVolume, weekStart, weeklyVolume } from '../logic/progression';
@@ -186,7 +186,7 @@ export const StatsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
                 {loggedExerciseIds.map((id) => (
                   <Chip
                     key={id}
-                    label={EXERCISES[id]?.name ?? id}
+                    label={exerciseById(id)?.name ?? id}
                     active={activeExercise === id}
                     onPress={() => setExerciseId(id)}
                   />

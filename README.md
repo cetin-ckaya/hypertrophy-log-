@@ -50,7 +50,11 @@ npm run build:web  # PWA çıktısı -> dist/
 ## Ne yapar
 
 ### Antrenman
-- **İki program, Ayarlar'dan seçilir:**
+- **Kendi programını yazabilirsin:** Ayarlar → Program → "Kendi programını yaz". Günleri,
+  sıralamayı (dinlenme günleri dahil), her günün hareketlerini ve set / tekrar aralıklarını
+  sen belirlersin; listede olmayan bir hareketi ad, kas grubu ve tip vererek ekleyebilirsin.
+  Kendi programların düzenlenebilir ve silinebilir; hazır programlar olduğu gibi kalır.
+- **Hazır iki program, Ayarlar'dan seçilir:**
   - *Hipertrofi · Push/Pull/Legs* — Pull 1 → Push 1 → Legs → Dinlenme → Pull 2 → Push 2 → Dinlenme,
     tüm hareketlerde 6–8 tekrar.
   - *Kalça ağırlıklı · 5 gün* — Kalça&Bacak → Sırt&Omuz → Kalça&Bacak (izolasyon) → Dinlenme →
@@ -65,8 +69,9 @@ npm run build:web  # PWA çıktısı -> dist/
 - **Progressive overload önerisi** — overload sadece ağırlık artışı değil,
   aynı ağırlıkta tekrar artışı da sayılır:
   - Tüm work-set'lerde hedef aralığın üst sınırına ulaştıysan → ağırlığı artır
-    (yani iki work-set'te de 8 tekrar → compound +2,5 kg, izolasyon +1,25 kg;
-    ayarlardan değiştirilebilir).
+    (yani tüm work-set'lerde üst sınıra ulaşınca).
+  - Uyarı ne kadar artıracağını söylemez, yalnızca artırman gerektiğini belirtir — miktara
+    sen karar verirsin.
   - Ağırlık aynı kalıp **set başına ortalama tekrar arttıysa** → "Overload ✓",
     aynı ağırlıkta kalıp üst sınıra taşıman söylenir.
   - Hiçbiri olmadıysa → aynı ağırlıkta kal.
@@ -78,9 +83,8 @@ npm run build:web  # PWA çıktısı -> dist/
 ### Beslenme
 - Günde 3 öğün, gramajları ile listelenir; öğünü yediğinde işaretlersin.
 - Günlük kalori ve makrolar üstte canlı, hedefe göre yüzde barıyla.
-- **Antrenman günü / dinlenme günü** ayrımı: dinlenme gününde 1. öğün dışındaki
-  öğünlerin pirinci otomatik 60 g düşer (Öğün 2: 240 → 180 g, Öğün 3: 225 → 165 g);
-  protein 165 g'ın altına inmesin diye tavuk dengelenir → ~2.912 kcal.
+- **Kalori her gün sabit:** antrenman ve dinlenme gününde aynı plan uygulanır. Gün tipi
+  yalnızca etiket olarak tutulur, gramajları değiştirmez.
 - Gramajları o güne özel düzenleyebilir, besin ekleyip çıkarabilirsin;
   "Plan" sekmesinden varsayılan planı değiştirirsin (geçmiş günler korunur).
 - 18 besinlik veritabanı (100 g / 100 ml, çiğ-kuru ölçü) + kendi besinini ekleme.
@@ -106,10 +110,15 @@ gösterilir ve **"Hesaplanan hedefi uygula"** dediğinde geçerli olur — mevcu
 değişmez. Uyguladıktan sonra aşağıdaki haftalık otomatik ayar bu başlangıç değeri üzerinden
 çalışmaya devam eder.
 
-### Kilo takibi ve otomatik kalori ayarı
+### Kilo takibi ve haftalık kalori değerlendirmesi
 - Her sabah kilo girişi, **7 günlük hareketli ortalama** ve grafik (günlük nokta + ortalama çizgisi).
-- Son 7 günün ortalaması ile önceki 7 günün ortalaması karşılaştırılır.
-  Hedef artış hızı **haftada 0,25–0,5 kg**:
+- Değerlendirme **her pazar** yapılır: son 7 günün ortalaması ile önceki 7 günün ortalaması
+  karşılaştırılır ve sonuç **Beslenme ekranında** öneri olarak çıkar. Pazar günü açılan öneri,
+  sen onaylayana veya reddedene kadar orada durur.
+- Bekleyen öneri yokken Beslenme ekranında yine de "Haftalık kalori değerlendirmesi" paneli
+  durur: mevcut trend, kaloriyi artırman / sabit bırakman / azaltman gerektiği ve önerinin
+  çıkacağı pazar tarihi yazar.
+- Hedef artış hızı **haftada 0,25–0,5 kg**:
 
   | Haftalık değişim | Uygulamanın önerisi |
   |---|---|
@@ -150,10 +159,7 @@ Antrenman günü toplamı: **3.303 kcal · P 167 g · K 488 g · Y 72 g**
 | | Fıstık ezmesi 15 g | | |
 | **Toplam** | 881 kcal · P 57 · K 120 · Y 22 | 1.246 kcal · P 57 · K 190 · Y 25 | 1.176 kcal · P 53 · K 178 · Y 25 |
 
-**Dinlenme günü:** Öğün 2 ve 3'ün pirinci −60 g. Pirinç azalınca protein 158 g'a
-düşeceği için tavuk otomatik dengelenir (130 → 145 g, 120 → 130 g) ve toplam
-**2.912 kcal · P 166 g · K 393 g · Y 72 g** olur — protein tabanı hiçbir günde
-165 g'ın altına inmez.
+**Dinlenme günü:** plan değişmez — kalori her gün aynıdır.
 
 Gramajlar Ayarlar/Beslenme → "Plan" sekmesinden değiştirilebilir; hedef kalori de
 oradan ayarlanır. Plan ile hedef arasında 40 kcal'dan fazla fark oluşursa
@@ -172,13 +178,14 @@ mürekkep `#201E1D`, vurgu `#EC3013`, yarıçap `0`, kural kalınlıkları `2px`
 
 ```
 App.tsx                  sekme kabuğu
-src/data/program.ts      hareket kataloğu, programlar ve döngüleri
+src/data/program.ts      hareket kataloğu, hazır programlar, özel içerik kayıt defteri
 src/data/foods.ts        besin veritabanı ve varsayılan plan
 src/logic/               progression, beslenme, kilo/otomatik ayar, enerji hesabı, tarih
 src/store/store.ts       kalıcı state ve tüm aksiyonlar
 src/components/          ortak arayüz bileşenleri ve grafikler
 src/screens/             Bugün, Antrenman (oturum/geçmiş/rekor), Beslenme
-                         (günlük/besin veritabanı), İstatistik (grafik/kilo/ayar özeti), Ayarlar
+                         (günlük/besin veritabanı), İstatistik (grafik/kilo/ayar özeti),
+                         Ayarlar, Program düzenleyici
 public/                  PWA manifesti, servis çalışanı, ana ekran simgeleri
 scripts/pwa-postbuild.mjs  web çıktısını kurulabilir PWA'ya çevirir
 .github/workflows/       GitHub Pages yayın iş akışı
