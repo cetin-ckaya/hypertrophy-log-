@@ -78,22 +78,11 @@ export const NutritionScreen = () => {
                 <Text style={font.body}>
                   Planın {Math.round(planTotal.kcal)} kcal, hedefin {state.calorieTarget} kcal —{' '}
                   {gap > 0 ? `${Math.round(gap)} kcal açık` : `${Math.round(-gap)} kcal fazla`} var.
-                  İki yönden birini seç:
                 </Text>
-                <Button title="Planı hedefe göre dengele" onPress={state.matchPlanToTarget} />
+                <Button title="Planı dengele" onPress={state.matchPlanToTarget} />
                 <Text style={font.tiny}>
-                  Gramajlar hedefe göre değişir (fark karbonhidrattan; protein{' '}
-                  {state.settings.proteinFloor} g altına düşmez). Plan{' '}
-                  {gap > 0 ? 'büyür' : 'küçülür'} — {state.calorieTarget} kcal korunur.
-                </Text>
-                <Button
-                  title="Hedefi plana göre güncelle"
-                  variant="ghost"
-                  onPress={state.setTargetFromPlan}
-                />
-                <Text style={font.tiny}>
-                  Gramajlara dokunulmaz; hedef {Math.round(planTotal.kcal)} kcal olur. Planı bilerek
-                  küçülttüysen bunu seç — haftalık ayar bu yeni hedeften devam eder.
+                  Fark karbonhidrattan (pirinç) kapatılır; protein {state.settings.proteinFloor} g'ın
+                  altına düşmez.
                 </Text>
             </Card>
           ) : null}

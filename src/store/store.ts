@@ -116,8 +116,6 @@ type Actions = {
   removeFood: (foodId: string) => void;
   setCalorieTarget: (kcal: number) => void;
   matchPlanToTarget: () => void;
-  /** Hedefi mevcut planın gerçek toplamına eşitler (dengelemenin ters yönü). */
-  setTargetFromPlan: () => void;
   /** Profil ve güncel kilodan hesaplanan hedefleri uygular. */
   applyEnergyTargets: (targets: EnergyTargets) => void;
 
@@ -517,21 +515,6 @@ export const useStore = create<Store>()(
             s.settings.proteinFloor
           );
           return { plan: next, dayLogs: syncTodayWithPlan(s.dayLogs, next) };
-        }),
-
-      setTargetFromPlan: () =>
-        set((s) => {
-          const totals = planMacros(s.plan, s.foods);
-          const kcal = Math.round(totals.kcal / 10) * 10;
-          return {
-            calorieTarget: kcal,
-            macroTargets: {
-              protein: Math.round(totals.protein),
-              carbs: Math.round(totals.carbs),
-              fat: Math.round(totals.fat),
-            },
-            targetHistory: [...s.targetHistory, { date: todayKey(), kcal }],
-          };
         }),
 
       applyEnergyTargets: (targets) =>
