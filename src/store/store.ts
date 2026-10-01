@@ -116,6 +116,8 @@ type Actions = {
   removeFood: (foodId: string) => void;
   setCalorieTarget: (kcal: number) => void;
   matchPlanToTarget: () => void;
+  /** Hedefi mevcut planın gerçek toplamına eşitler (dengelemenin ters yönü). */
+  setTargetFromPlan: () => void;
   /** Profil ve güncel kilodan hesaplanan hedefleri uygular. */
   applyEnergyTargets: (targets: EnergyTargets) => void;
 
@@ -156,6 +158,30 @@ const initialState = (): State => ({
   pendingAdjustment: null,
   adjustments: [],
 });
+
+/**
+ * Plan değişince bugünün günlüğü de takip etsin: henüz yenmemiş öğünler yeni
+ * plandan tazelenir, yenmiş öğünler kayıt olduğu için olduğu gibi kalır.
+ * Geçmiş günlere dokunulmaz.
+ */
+const syncTodayWithPlan = (
+  dayLogs: Record<string, DayLog>,
+  plan: Meal[]
+): Record<string, DayLog> => {
+  const date = todayKey();
+  const log = dayLogs[date];
+  if (!log) return dayLogs;
+
+  const fresh = buildDayMeals(plan);
+  const merged = fresh.map((m) => {
+    const old = log.meals.find((x) => x.id === m.id);
+    return old && old.eaten ? old : m;
+  });
+  // Plandan çıkarılmış ama o gün yenmiş öğünler kayıtta kalsın.
+  const dropped = log.meals.filter((m) => m.eaten && !fresh.some((f) => f.id === m.id));
+
+  return { ...dayLogs, [date]: { ...log, meals: [...merged, ...dropped] } };
+};
 
 /** Var olan günlüğü döndürür; yoksa plandan türetilmiş (henüz kaydedilmemiş) bir taslak üretir. */
 export const dayLogFor = (state: State, date: string): DayLog => {
@@ -431,8 +457,8 @@ export const useStore = create<Store>()(
         }),
 
       setPlanItemAmount: (mealId, foodId, amount) =>
-        set((s) => ({
-          plan: s.plan.map((m) =>
+        set((s) => {
+          const plan = s.plan.map((m) =>
             m.id === mealId
               ? {
                   ...m,
@@ -441,24 +467,27 @@ export const useStore = create<Store>()(
                   ),
                 }
               : m
-          ),
-        })),
+          );
+          return { plan, dayLogs: syncTodayWithPlan(s.dayLogs, plan) };
+        }),
 
       addPlanItem: (mealId, foodId, amount) =>
-        set((s) => ({
-          plan: s.plan.map((m) =>
+        set((s) => {
+          const plan = s.plan.map((m) =>
             m.id === mealId && !m.items.some((i) => i.foodId === foodId)
               ? { ...m, items: [...m.items, { foodId, amount: Math.max(0, amount) }] }
               : m
-          ),
-        })),
+          );
+          return { plan, dayLogs: syncTodayWithPlan(s.dayLogs, plan) };
+        }),
 
       removePlanItem: (mealId, foodId) =>
-        set((s) => ({
-          plan: s.plan.map((m) =>
+        set((s) => {
+          const plan = s.plan.map((m) =>
             m.id === mealId ? { ...m, items: m.items.filter((i) => i.foodId !== foodId) } : m
-          ),
-        })),
+          );
+          return { plan, dayLogs: syncTodayWithPlan(s.dayLogs, plan) };
+        }),
 
       addFood: (food) =>
         set((s) => ({ foods: { ...s.foods, [food.id]: { ...food, custom: true } } })),
@@ -487,7 +516,22 @@ export const useStore = create<Store>()(
             s.foods,
             s.settings.proteinFloor
           );
-          return { plan: next };
+          return { plan: next, dayLogs: syncTodayWithPlan(s.dayLogs, next) };
+        }),
+
+      setTargetFromPlan: () =>
+        set((s) => {
+          const totals = planMacros(s.plan, s.foods);
+          const kcal = Math.round(totals.kcal / 10) * 10;
+          return {
+            calorieTarget: kcal,
+            macroTargets: {
+              protein: Math.round(totals.protein),
+              carbs: Math.round(totals.carbs),
+              fat: Math.round(totals.fat),
+            },
+            targetHistory: [...s.targetHistory, { date: todayKey(), kcal }],
+          };
         }),
 
       applyEnergyTargets: (targets) =>
@@ -578,8 +622,10 @@ export const useStore = create<Store>()(
           const gramDelta = adj.changes
             .filter((c) => c.foodId === CARB_SOURCE_ID)
             .reduce((sum, c) => sum + (c.to - c.from), 0);
+          const nextPlan = adj.plan ? adj.plan : s.plan;
           return {
-            plan: adj.plan ? adj.plan : s.plan,
+            plan: nextPlan,
+            dayLogs: syncTodayWithPlan(s.dayLogs, nextPlan),
             calorieTarget: adj.toKcal,
             macroTargets: {
               ...s.macroTargets,

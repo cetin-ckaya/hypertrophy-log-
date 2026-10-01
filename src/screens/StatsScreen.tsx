@@ -1,11 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { AdjustmentCard } from '../components/AdjustmentCard';
 import { BarChart, LineChart } from '../components/charts';
 import {
   Button,
-  Chip,
   DataRow,
   Grid,
   Label,
@@ -15,10 +14,10 @@ import {
   Section,
   StatTile,
 } from '../components/ui';
-import { GROUP_NAMES, exerciseById } from '../data/program';
+import { GROUP_NAMES } from '../data/program';
 import { formatRelative, formatShort, todayKey } from '../logic/date';
 import { eatenMacros } from '../logic/nutrition';
-import { exerciseProgress, sessionVolume, weekStart, weeklyVolume } from '../logic/progression';
+import { sessionVolume, weekStart, weeklyVolume } from '../logic/progression';
 import { latestAverage, sortedWeights, weeklyTrend, weightSeries } from '../logic/weight';
 import { useStore } from '../store/store';
 import { CHART_GROUP_ORDER, chartGroup, colors, font, fonts, rules, spacing } from '../theme';
@@ -33,23 +32,6 @@ export const StatsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
   const completed = state.sessions.filter((s) => s.completedAt);
   const [weightDraft, setWeightDraft] = useState<number>(
     state.weights[today] ?? latestAverage(state.weights) ?? state.profile.startWeightKg
-  );
-
-  const loggedExerciseIds = useMemo(() => {
-    const ids = new Set<string>();
-    completed.forEach((s) =>
-      s.exercises.forEach((e) => {
-        if (e.sets.some((x) => x.reps > 0)) ids.add(e.exerciseId);
-      })
-    );
-    return Array.from(ids);
-  }, [state.sessions]);
-
-  const [exerciseId, setExerciseId] = useState<string | null>(null);
-  const activeExercise = exerciseId ?? loggedExerciseIds[0] ?? null;
-  const progress = useMemo(
-    () => (activeExercise ? exerciseProgress(state.sessions, activeExercise) : []),
-    [state.sessions, activeExercise]
   );
 
   const volumes = useMemo(() => weeklyVolume(state.sessions), [state.sessions]);
@@ -173,38 +155,6 @@ export const StatsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
           {lastWeek ? `${formatShort(lastWeek.week)} haftası` : 'Veri yok'} · hacim = set × tekrar × ağırlık
         </Text>
         <BarChart data={groupBars} formatValue={(v) => `${Math.round(v / 1000)}b`} height={170} />
-      </Section>
-
-      <Section>
-        <Text style={font.h3}>Tah. 1RM · hareket</Text>
-        {loggedExerciseIds.length === 0 ? (
-          <Text style={font.small}>Antrenman kaydettikçe hareket grafikleri burada oluşur.</Text>
-        ) : (
-          <>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <Row gap={spacing.sm}>
-                {loggedExerciseIds.map((id) => (
-                  <Chip
-                    key={id}
-                    label={exerciseById(id)?.name ?? id}
-                    active={activeExercise === id}
-                    onPress={() => setExerciseId(id)}
-                  />
-                ))}
-              </Row>
-            </ScrollView>
-            <LineChart
-              labels={progress.map((p) => formatShort(p.date))}
-              unit="kg"
-              decimals={1}
-              height={170}
-              series={[
-                { name: 'Ağırlık', color: colors.faintInk, values: progress.map((p) => p.weight) },
-                { name: 'Tah. 1RM', color: colors.accent, values: progress.map((p) => p.e1rm) },
-              ]}
-            />
-          </>
-        )}
       </Section>
 
       <Section>
