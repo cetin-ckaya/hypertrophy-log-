@@ -163,8 +163,8 @@ Antrenman günü toplamı: **3.303 kcal · P 167 g · K 488 g · Y 72 g**
 
 Gramajlar Ayarlar/Beslenme → "Plan" sekmesinden değiştirilebilir; hedef kalori de
 oradan ayarlanır. Plan ile hedef arasında 40 kcal'dan fazla fark oluşursa
-Beslenme ekranında uyarı kartı ve tek dokunuşluk **"Planı hedefe göre dengele"**
-düğmesi çıkar (fark karbonhidrattan kapatılır, protein tabanı korunur).
+Beslenme ekranında uyarı kartı ve tek dokunuşluk **"Planı dengele"** düğmesi çıkar:
+fark karbonhidrattan (pirinç) kapatılır, protein tabanı korunur.
 
 ## Teknoloji
 

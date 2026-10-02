@@ -77,10 +77,13 @@ export const NutritionScreen = () => {
                 <Label style={{ color: colors.accentInk }}>Plan ile hedef arasında fark var</Label>
                 <Text style={font.body}>
                   Planın {Math.round(planTotal.kcal)} kcal, hedefin {state.calorieTarget} kcal —{' '}
-                  {gap > 0 ? `${Math.round(gap)} kcal açık` : `${Math.round(-gap)} kcal fazla`} var. Farkı
-                  karbonhidrattan dengeleyebilirim; protein {state.settings.proteinFloor} g altına düşmez.
+                  {gap > 0 ? `${Math.round(gap)} kcal açık` : `${Math.round(-gap)} kcal fazla`} var.
                 </Text>
-                <Button title="Planı hedefe göre dengele" onPress={state.matchPlanToTarget} />
+                <Button title="Planı dengele" onPress={state.matchPlanToTarget} />
+                <Text style={font.tiny}>
+                  Fark karbonhidrattan (pirinç) kapatılır; protein {state.settings.proteinFloor} g'ın
+                  altına düşmez.
+                </Text>
             </Card>
           ) : null}
 
