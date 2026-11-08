@@ -87,7 +87,7 @@ npm run build:web  # PWA çıktısı -> dist/
   yalnızca etiket olarak tutulur, gramajları değiştirmez.
 - Gramajları o güne özel düzenleyebilir, besin ekleyip çıkarabilirsin;
   "Plan" sekmesinden varsayılan planı değiştirirsin (geçmiş günler korunur).
-- 19 besinlik veritabanı (100 g / 100 ml, çiğ-kuru ölçü) + kendi besinini ekleme.
+- 20 besinlik veritabanı (100 g / 100 ml, çiğ-kuru ölçü) + kendi besinini ekleme.
 
 ### Profilden otomatik kalori ve makro hesabı
 
@@ -145,27 +145,27 @@ değişmez. Uyguladıktan sonra aşağıdaki haftalık otomatik ayar bu başlang
 
 ## Varsayılan öğün planı
 
-Hedefler: **3.450 kcal · protein 170 g · yağ 74 g**. Protein ve yağ sabit
-tutulup kalan kalori pirinçten tamamlandığı için karbonhidrat **510 g**'a çıkar.
+Hedefler: **3.470 kcal · protein 170 g · yağ 75 g**. Protein ve yağ sabit
+tutulup kalan kalori pirinçten tamamlandığı için karbonhidrat **512 g**'a çıkar.
 
-Plan toplamı: **3.458 kcal · P 170 g · K 510 g · Y 74 g** (hedef aralığı 3.400–3.500).
+Plan toplamı: **3.470 kcal · P 170 g · K 512 g · Y 75 g** (hedef aralığı 3.400–3.500).
 
 | | Öğün 1 — Yurt Kahvaltısı | Ara Öğün — Gainer | Öğün 2 — Antrenman sonrası | Öğün 3 — Akşam |
 |---|---|---|---|---|
-| | *(içerik girilmemiş)* | Gainer 186 g | Tavuk göğsü (çiğ) 195 g | Tavuk göğsü (çiğ) 190 g |
-| | | | Pirinç (kuru) 220 g | Pirinç (kuru) 220 g |
-| | | | Zeytinyağı 28 ml | Zeytinyağı 28 ml |
-| **Toplam** | 0 kcal | 744 kcal · P 20 · K 162 · Y 1 | 1.361 kcal · P 76 · K 174 · Y 36 | 1.353 kcal · P 74 · K 174 · Y 36 |
+| | Yurt kahvaltısı (tahmini) 250 g | Gainer 200 g | Tavuk göğsü (çiğ) 180 g | Tavuk göğsü (çiğ) 180 g |
+| | | | Pirinç (kuru) 200 g | Pirinç (kuru) 200 g |
+| | | | Zeytinyağı 25 ml | Zeytinyağı 25 ml |
+| **Toplam** | 250 kcal · P 10 · K 34 · Y 8 | 744 kcal · P 20 · K 162 · Y 1 | 1.238 kcal · P 70 · K 158 · Y 33 | 1.238 kcal · P 70 · K 158 · Y 33 |
 
-**Yurt kahvaltısı** bilinçli olarak boş bırakıldı: içeriği her gün değiştiği için
-takip edilen 3.458 kcal yurttaki kahvaltıyı **içermez**. Kahvaltıyı da saymak
-istersen bu öğüne besin ekleyebilir ya da "Yurt kahvaltısı" diye tek bir tahmini
-besin tanımlayıp 1 porsiyon olarak girebilirsin.
+**Yurt kahvaltısı** içeriği her gün değiştiği için tek bir tahmini besinle
+sayılır: `Yurt kahvaltısı (tahmini)`, 100 g başına 100 kcal · P 4 · K 13,6 · Y 3,2.
+Yani **gramajı doğrudan tahmini kaloridir** — 250 g = 250 kcal. Kesin olan 1
+haşlanmış yumurtanın proteini (~6,3 g) bu 10 g'ın içinde; kalanı ekmek/peynir
+payı. Kahvaltı daha büyükse gramajı 300'e çek (300 kcal), daha küçükse 200'e.
 
-**Gainer** etiketi 1 servis için 744 kcal · P 20 · K 162 · Y 1,4 ve 2.500 mg
-Creapure® kreatin verir; veritabanında 100 g başına 400 kcal · P 10,8 · K 87,1 ·
-Y 0,75 olarak tutulur, yani 1 servis = **186 g**. Kendi ölçeğin farklıysa
-gramajı Plan sekmesinden düzeltebilirsin.
+**Gainer** etiketi **200 g** için 744 kcal · P 20 · K 162 · Y 1,4 ve 2.500 mg
+Creapure® kreatin verir; veritabanında 100 g başına 372 kcal · P 10 · K 81 ·
+Y 0,7 olarak tutulur.
 
 **Dinlenme günü:** plan değişmez — kalori her gün aynıdır.
 

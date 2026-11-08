@@ -148,8 +148,8 @@ const initialState = (): State => ({
   activeSession: null,
   foods: clone(DEFAULT_FOODS),
   plan: clone(DEFAULT_PLAN),
-  calorieTarget: 3450,
-  macroTargets: { protein: 170, carbs: 510, fat: 74 },
+  calorieTarget: 3470,
+  macroTargets: { protein: 170, carbs: 512, fat: 75 },
   targetHistory: [{ date: todayKey(), kcal: 3450 }],
   dayLogs: {},
   weights: {},
@@ -698,7 +698,7 @@ export const useStore = create<Store>()(
     }),
     {
       name: 'hipertrofi-store-v1',
-      version: 6,
+      version: 7,
       storage: createJSONStorage(() => AsyncStorage),
       /**
        * v3: öğün planı protein 165 g / yağ 72 g hedefine göre yeniden kuruldu,
@@ -711,19 +711,28 @@ export const useStore = create<Store>()(
        * v6: öğün planı yeniden kuruldu — yurt kahvaltısı (içeriksiz), gainer'lı
        *     ara öğün ve 3.450 kcal hedefi. Kullanıcı bu planı açıkça istedi, bu
        *     yüzden koşulsuz uygulanır; geçmiş günlerin kayıtlarına dokunulmaz.
+       * v7: yurt kahvaltısı 250 kcal tahminiyle sayılıyor, gainer servisi 200 g
+       *     (etiketteki 744 kcal) olarak düzeltildi, hedef 3.470 kcal.
        */
       migrate: (persisted, version) => {
         let state = persisted as Partial<State> | undefined;
         if (!state) return persisted as Store;
-        if (version < 6) {
+        if (version < 7) {
           const base = initialState();
           state = {
             ...state,
             plan: base.plan,
             calorieTarget: base.calorieTarget,
             macroTargets: base.macroTargets,
-            // Kullanıcının düzenlediği/eklediği besinler korunur, gainer eklenir.
-            foods: { ...base.foods, ...(state.foods ?? {}) },
+            // Kullanıcının düzenlediği/eklediği besinler korunur; gainer ve
+            // yurt kahvaltısı plan gramajlarıyla tutarlı olmak zorunda olduğu
+            // için varsayılan değerlerine döndürülür.
+            foods: {
+              ...base.foods,
+              ...(state.foods ?? {}),
+              gainer: base.foods.gainer,
+              dorm_breakfast: base.foods.dorm_breakfast,
+            },
             dayLogs: syncTodayWithPlan(state.dayLogs ?? {}, base.plan),
             targetHistory: [
               ...(state.targetHistory ?? []),
