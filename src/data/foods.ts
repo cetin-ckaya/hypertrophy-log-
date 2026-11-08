@@ -21,6 +21,8 @@ export const DEFAULT_FOODS: Record<string, Food> = Object.fromEntries(
     f('chicken', 'Tavuk göğsü (çiğ)', 'g', 165, 31.0, 0, 3.6),
     f('rice', 'Pirinç (kuru)', 'g', 360, 7.0, 79.0, 0.6),
     f('olive_oil', 'Zeytinyağı', 'ml', 884, 0, 0, 100),
+    // Etiket 1 servis (186 g) için: 744 kcal · P 20 · K 162 · Y 1,4 · 2500 mg Creapure.
+    f('gainer', 'Gainer (Creapure kreatinli)', 'g', 400, 10.8, 87.1, 0.75),
     // Alternatifler
     f('ww_pasta', 'Tam buğday makarna (kuru)', 'g', 348, 13.0, 64.0, 2.5),
     f('sweet_potato', 'Tatlı patates (çiğ)', 'g', 86, 1.6, 20.1, 0.1),
@@ -36,38 +38,37 @@ export const DEFAULT_FOODS: Record<string, Food> = Object.fromEntries(
 );
 
 /**
- * Antrenman günü varsayılan planı — 3.303 kcal · P 167 · K 488 · Y 72.
- * Protein 165 g ve yağ 72 g hedefine göre kurulup, kalan kalori pirinçten
- * tamamlandı. Dinlenme gününde 2. ve 3. öğünün pirinci düşer (~2.910 kcal).
+ * Varsayılan plan — 3.458 kcal · P 170 · K 510 · Y 74 (hedef 3.400–3.500).
+ * Yurt kahvaltısının içeriği sabit olmadığı için boş bırakıldı; takip edilen
+ * toplam ara öğün ile iki ana öğünden gelir. Kalori her gün aynıdır.
  */
 export const DEFAULT_PLAN: Meal[] = [
   {
     id: 'meal1',
-    name: 'Öğün 1 — Sabah',
-    items: [
-      { foodId: 'oats', amount: 100 },
-      { foodId: 'whey', amount: 30 },
-      { foodId: 'banana', amount: 150 },
-      { foodId: 'milk', amount: 300 },
-      { foodId: 'peanut_butter', amount: 15 },
-    ],
+    name: 'Öğün 1 — Yurt Kahvaltısı',
+    items: [],
+  },
+  {
+    id: 'snack1',
+    name: 'Ara Öğün — Gainer',
+    items: [{ foodId: 'gainer', amount: 186 }],
   },
   {
     id: 'meal2',
     name: 'Öğün 2 — Antrenman sonrası',
     items: [
-      { foodId: 'chicken', amount: 130 },
-      { foodId: 'rice', amount: 240 },
-      { foodId: 'olive_oil', amount: 19 },
+      { foodId: 'chicken', amount: 195 },
+      { foodId: 'rice', amount: 220 },
+      { foodId: 'olive_oil', amount: 28 },
     ],
   },
   {
     id: 'meal3',
     name: 'Öğün 3 — Akşam',
     items: [
-      { foodId: 'chicken', amount: 120 },
-      { foodId: 'rice', amount: 225 },
-      { foodId: 'olive_oil', amount: 19 },
+      { foodId: 'chicken', amount: 190 },
+      { foodId: 'rice', amount: 220 },
+      { foodId: 'olive_oil', amount: 28 },
     ],
   },
 ];
