@@ -128,7 +128,7 @@ değişmez. Uyguladıktan sonra aşağıdaki haftalık otomatik ayar bu başlang
   | > 0,5 kg | −150 kcal |
 
 - Kalori değişimi **karbonhidrattan** (pirinç) yapılır, Öğün 2 ve Öğün 3'e eşit dağıtılır;
-  protein 165 g'ın altına düşerse tavuk gramajı otomatik artırılır.
+  protein 160 g'ın altına düşerse tavuk gramajı otomatik artırılır.
 - Öneri bir **kart olarak gösterilir; onaylayana kadar hiçbir şey değişmez.**
   Onaylarsan hedef ve gramajlar güncellenir, reddedersen kayıt geçmişte kalır.
 
@@ -145,17 +145,17 @@ değişmez. Uyguladıktan sonra aşağıdaki haftalık otomatik ayar bu başlang
 
 ## Varsayılan öğün planı
 
-Hedefler: **3.470 kcal · protein 170 g · yağ 75 g**. Protein ve yağ sabit
-tutulup kalan kalori pirinçten tamamlandığı için karbonhidrat **512 g**'a çıkar.
+Hedefler: **3.470 kcal · protein 160 g · yağ 74 g**. Protein ve yağ sabit
+tutulup kalan kalori pirinçten tamamlandığı için karbonhidrat **524 g**'a çıkar.
 
-Plan toplamı: **3.470 kcal · P 170 g · K 512 g · Y 75 g** (hedef aralığı 3.400–3.500).
+Plan toplamı: **3.466 kcal · P 160 g · K 524 g · Y 74 g** (hedef aralığı 3.400–3.500).
 
 | | Öğün 1 — Yurt Kahvaltısı | Ara Öğün — Gainer | Öğün 2 — Antrenman sonrası | Öğün 3 — Akşam |
 |---|---|---|---|---|
-| | Yurt kahvaltısı (tahmini) 250 g | Gainer 200 g | Tavuk göğsü (çiğ) 180 g | Tavuk göğsü (çiğ) 180 g |
-| | | | Pirinç (kuru) 200 g | Pirinç (kuru) 200 g |
+| | Yurt kahvaltısı (tahmini) 250 g | Gainer 200 g | Tavuk göğsü (çiğ) 165 g | Tavuk göğsü (çiğ) 160 g |
+| | | | Pirinç (kuru) 210 g | Pirinç (kuru) 205 g |
 | | | | Zeytinyağı 25 ml | Zeytinyağı 25 ml |
-| **Toplam** | 250 kcal · P 10 · K 34 · Y 8 | 744 kcal · P 20 · K 162 · Y 1 | 1.238 kcal · P 70 · K 158 · Y 33 | 1.238 kcal · P 70 · K 158 · Y 33 |
+| **Toplam** | 250 kcal · P 10 · K 34 · Y 8 | 744 kcal · P 20 · K 162 · Y 1 | 1.249 kcal · P 66 · K 166 · Y 32 | 1.223 kcal · P 64 · K 162 · Y 32 |
 
 **Yurt kahvaltısı** içeriği her gün değiştiği için tek bir tahmini besinle
 sayılır: `Yurt kahvaltısı (tahmini)`, 100 g başına 100 kcal · P 4 · K 13,6 · Y 3,2.

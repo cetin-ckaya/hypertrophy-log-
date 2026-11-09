@@ -42,7 +42,7 @@ export const DEFAULT_FOODS: Record<string, Food> = Object.fromEntries(
 );
 
 /**
- * Varsayılan plan — 3.470 kcal · P 170 · K 512 · Y 75 (hedef 3.400–3.500).
+ * Varsayılan plan — 3.466 kcal · P 160 · K 524 · Y 74 (hedef 3.400–3.500).
  * Yurt kahvaltısı 250 kcal'lık tahminle sayılır (kesin olan 1 haşlanmış yumurta
  * protein makrosuna dahil). Kalori her gün aynıdır.
  */
@@ -61,8 +61,8 @@ export const DEFAULT_PLAN: Meal[] = [
     id: 'meal2',
     name: 'Öğün 2 — Antrenman sonrası',
     items: [
-      { foodId: 'chicken', amount: 180 },
-      { foodId: 'rice', amount: 200 },
+      { foodId: 'chicken', amount: 165 },
+      { foodId: 'rice', amount: 210 },
       { foodId: 'olive_oil', amount: 25 },
     ],
   },
@@ -70,8 +70,8 @@ export const DEFAULT_PLAN: Meal[] = [
     id: 'meal3',
     name: 'Öğün 3 — Akşam',
     items: [
-      { foodId: 'chicken', amount: 180 },
-      { foodId: 'rice', amount: 200 },
+      { foodId: 'chicken', amount: 160 },
+      { foodId: 'rice', amount: 205 },
       { foodId: 'olive_oil', amount: 25 },
     ],
   },

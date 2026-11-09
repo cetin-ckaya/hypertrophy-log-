@@ -36,7 +36,7 @@ const DEFAULT_SETTINGS: Settings = {
   restSeconds: 120,
   compoundIncrement: 2.5,
   isolationIncrement: 1.25,
-  proteinFloor: 165,
+  proteinFloor: 160,
   autoAdjustEnabled: true,
 };
 
@@ -149,7 +149,7 @@ const initialState = (): State => ({
   foods: clone(DEFAULT_FOODS),
   plan: clone(DEFAULT_PLAN),
   calorieTarget: 3470,
-  macroTargets: { protein: 170, carbs: 512, fat: 75 },
+  macroTargets: { protein: 160, carbs: 524, fat: 74 },
   targetHistory: [{ date: todayKey(), kcal: 3450 }],
   dayLogs: {},
   weights: {},
@@ -698,7 +698,7 @@ export const useStore = create<Store>()(
     }),
     {
       name: 'hipertrofi-store-v1',
-      version: 7,
+      version: 8,
       storage: createJSONStorage(() => AsyncStorage),
       /**
        * v3: öğün planı protein 165 g / yağ 72 g hedefine göre yeniden kuruldu,
@@ -713,15 +713,18 @@ export const useStore = create<Store>()(
        *     yüzden koşulsuz uygulanır; geçmiş günlerin kayıtlarına dokunulmaz.
        * v7: yurt kahvaltısı 250 kcal tahminiyle sayılıyor, gainer servisi 200 g
        *     (etiketteki 744 kcal) olarak düzeltildi, hedef 3.470 kcal.
+       * v8: protein 160 g'a indirildi (tavuk göğsü azaltıldı, fark pirinçten),
+       *     protein tabanı da 160 g.
        */
       migrate: (persisted, version) => {
         let state = persisted as Partial<State> | undefined;
         if (!state) return persisted as Store;
-        if (version < 7) {
+        if (version < 8) {
           const base = initialState();
           state = {
             ...state,
             plan: base.plan,
+            settings: { ...base.settings, ...(state.settings ?? {}), proteinFloor: base.settings.proteinFloor },
             calorieTarget: base.calorieTarget,
             macroTargets: base.macroTargets,
             // Kullanıcının düzenlediği/eklediği besinler korunur; gainer ve
