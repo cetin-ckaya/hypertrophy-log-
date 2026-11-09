@@ -81,13 +81,13 @@ npm run build:web  # PWA çıktısı -> dist/
 - Yeni antrenman açıldığında setler önerilen ağırlıkla önden doldurulur.
 
 ### Beslenme
-- Günde 3 öğün, gramajları ile listelenir; öğünü yediğinde işaretlersin.
+- Günde 3 ana öğün + 1 ara öğün, gramajları ile listelenir; öğünü yediğinde işaretlersin.
 - Günlük kalori ve makrolar üstte canlı, hedefe göre yüzde barıyla.
 - **Kalori her gün sabit:** antrenman ve dinlenme gününde aynı plan uygulanır. Gün tipi
   yalnızca etiket olarak tutulur, gramajları değiştirmez.
 - Gramajları o güne özel düzenleyebilir, besin ekleyip çıkarabilirsin;
   "Plan" sekmesinden varsayılan planı değiştirirsin (geçmiş günler korunur).
-- 18 besinlik veritabanı (100 g / 100 ml, çiğ-kuru ölçü) + kendi besinini ekleme.
+- 20 besinlik veritabanı (100 g / 100 ml, çiğ-kuru ölçü) + kendi besinini ekleme.
 
 ### Profilden otomatik kalori ve makro hesabı
 
@@ -128,7 +128,7 @@ değişmez. Uyguladıktan sonra aşağıdaki haftalık otomatik ayar bu başlang
   | > 0,5 kg | −150 kcal |
 
 - Kalori değişimi **karbonhidrattan** (pirinç) yapılır, Öğün 2 ve Öğün 3'e eşit dağıtılır;
-  protein 165 g'ın altına düşerse tavuk gramajı otomatik artırılır.
+  protein 160 g'ın altına düşerse tavuk gramajı otomatik artırılır.
 - Öneri bir **kart olarak gösterilir; onaylayana kadar hiçbir şey değişmez.**
   Onaylarsan hedef ve gramajlar güncellenir, reddedersen kayıt geçmişte kalır.
 
@@ -145,24 +145,32 @@ değişmez. Uyguladıktan sonra aşağıdaki haftalık otomatik ayar bu başlang
 
 ## Varsayılan öğün planı
 
-Hedefler: **3.300 kcal · protein 165 g · yağ 72 g**. Protein ve yağ sabit
-tutulup kalan kalori pirinçten tamamlandığı için karbonhidrat **488 g**'a çıkar.
+Hedefler: **3.470 kcal · protein 160 g · yağ 74 g**. Protein ve yağ sabit
+tutulup kalan kalori pirinçten tamamlandığı için karbonhidrat **524 g**'a çıkar.
 
-Antrenman günü toplamı: **3.303 kcal · P 167 g · K 488 g · Y 72 g**
+Plan toplamı: **3.466 kcal · P 160 g · K 524 g · Y 74 g** (hedef aralığı 3.400–3.500).
 
-| | Öğün 1 — Sabah | Öğün 2 — Antrenman sonrası | Öğün 3 — Akşam |
-|---|---|---|---|
-| | Yulaf (kuru) 100 g | Tavuk göğsü (çiğ) 130 g | Tavuk göğsü (çiğ) 120 g |
-| | Whey 30 g | Pirinç (kuru) 240 g | Pirinç (kuru) 225 g |
-| | Muz 150 g | Zeytinyağı 19 ml | Zeytinyağı 19 ml |
-| | Süt 300 ml | | |
-| | Fıstık ezmesi 15 g | | |
-| **Toplam** | 881 kcal · P 57 · K 120 · Y 22 | 1.246 kcal · P 57 · K 190 · Y 25 | 1.176 kcal · P 53 · K 178 · Y 25 |
+| | Öğün 1 — Yurt Kahvaltısı | Ara Öğün — Gainer | Öğün 2 — Antrenman sonrası | Öğün 3 — Akşam |
+|---|---|---|---|---|
+| | Yurt kahvaltısı (tahmini) 250 g | Gainer 200 g | Tavuk göğsü (çiğ) 165 g | Tavuk göğsü (çiğ) 160 g |
+| | | | Pirinç (kuru) 210 g | Pirinç (kuru) 205 g |
+| | | | Zeytinyağı 25 ml | Zeytinyağı 25 ml |
+| **Toplam** | 250 kcal · P 10 · K 34 · Y 8 | 744 kcal · P 20 · K 162 · Y 1 | 1.249 kcal · P 66 · K 166 · Y 32 | 1.223 kcal · P 64 · K 162 · Y 32 |
+
+**Yurt kahvaltısı** içeriği her gün değiştiği için tek bir tahmini besinle
+sayılır: `Yurt kahvaltısı (tahmini)`, 100 g başına 100 kcal · P 4 · K 13,6 · Y 3,2.
+Yani **gramajı doğrudan tahmini kaloridir** — 250 g = 250 kcal. Kesin olan 1
+haşlanmış yumurtanın proteini (~6,3 g) bu 10 g'ın içinde; kalanı ekmek/peynir
+payı. Kahvaltı daha büyükse gramajı 300'e çek (300 kcal), daha küçükse 200'e.
+
+**Gainer** etiketi **200 g** için 744 kcal · P 20 · K 162 · Y 1,4 ve 2.500 mg
+Creapure® kreatin verir; veritabanında 100 g başına 372 kcal · P 10 · K 81 ·
+Y 0,7 olarak tutulur.
 
 **Dinlenme günü:** plan değişmez — kalori her gün aynıdır.
 
-Gramajlar Ayarlar/Beslenme → "Plan" sekmesinden değiştirilebilir; hedef kalori de
-oradan ayarlanır. Plan ile hedef arasında 40 kcal'dan fazla fark oluşursa
+Gramajlar Beslenme → "Plan" sekmesinden değiştirilebilir; hedef kalori de
+Ayarlar'dan ayarlanır. Plan ile hedef arasında 40 kcal'dan fazla fark oluşursa
 Beslenme ekranında uyarı kartı ve tek dokunuşluk **"Planı dengele"** düğmesi çıkar:
 fark karbonhidrattan (pirinç) kapatılır, protein tabanı korunur.
 

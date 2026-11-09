@@ -36,7 +36,7 @@ const DEFAULT_SETTINGS: Settings = {
   restSeconds: 120,
   compoundIncrement: 2.5,
   isolationIncrement: 1.25,
-  proteinFloor: 165,
+  proteinFloor: 160,
   autoAdjustEnabled: true,
 };
 
@@ -148,9 +148,9 @@ const initialState = (): State => ({
   activeSession: null,
   foods: clone(DEFAULT_FOODS),
   plan: clone(DEFAULT_PLAN),
-  calorieTarget: 3300,
-  macroTargets: { protein: 165, carbs: 488, fat: 72 },
-  targetHistory: [{ date: todayKey(), kcal: 3300 }],
+  calorieTarget: 3470,
+  macroTargets: { protein: 160, carbs: 524, fat: 74 },
+  targetHistory: [{ date: todayKey(), kcal: 3450 }],
   dayLogs: {},
   weights: {},
   pendingAdjustment: null,
@@ -698,7 +698,7 @@ export const useStore = create<Store>()(
     }),
     {
       name: 'hipertrofi-store-v1',
-      version: 5,
+      version: 8,
       storage: createJSONStorage(() => AsyncStorage),
       /**
        * v3: öğün planı protein 165 g / yağ 72 g hedefine göre yeniden kuruldu,
@@ -708,10 +708,41 @@ export const useStore = create<Store>()(
        * v4: profile cinsiyet/aktivite/hedef alanları ve program seçimi eklendi.
        * v5: dinlenme günü kalori indirimi kaldırıldı (kalori her gün sabit) ve
        *     kullanıcının kendi programları / hareketleri için alanlar eklendi.
+       * v6: öğün planı yeniden kuruldu — yurt kahvaltısı (içeriksiz), gainer'lı
+       *     ara öğün ve 3.450 kcal hedefi. Kullanıcı bu planı açıkça istedi, bu
+       *     yüzden koşulsuz uygulanır; geçmiş günlerin kayıtlarına dokunulmaz.
+       * v7: yurt kahvaltısı 250 kcal tahminiyle sayılıyor, gainer servisi 200 g
+       *     (etiketteki 744 kcal) olarak düzeltildi, hedef 3.470 kcal.
+       * v8: protein 160 g'a indirildi (tavuk göğsü azaltıldı, fark pirinçten),
+       *     protein tabanı da 160 g.
        */
       migrate: (persisted, version) => {
         let state = persisted as Partial<State> | undefined;
         if (!state) return persisted as Store;
+        if (version < 8) {
+          const base = initialState();
+          state = {
+            ...state,
+            plan: base.plan,
+            settings: { ...base.settings, ...(state.settings ?? {}), proteinFloor: base.settings.proteinFloor },
+            calorieTarget: base.calorieTarget,
+            macroTargets: base.macroTargets,
+            // Kullanıcının düzenlediği/eklediği besinler korunur; gainer ve
+            // yurt kahvaltısı plan gramajlarıyla tutarlı olmak zorunda olduğu
+            // için varsayılan değerlerine döndürülür.
+            foods: {
+              ...base.foods,
+              ...(state.foods ?? {}),
+              gainer: base.foods.gainer,
+              dorm_breakfast: base.foods.dorm_breakfast,
+            },
+            dayLogs: syncTodayWithPlan(state.dayLogs ?? {}, base.plan),
+            targetHistory: [
+              ...(state.targetHistory ?? []),
+              { date: todayKey(), kcal: base.calorieTarget },
+            ],
+          };
+        }
         if (version < 5) {
           const base = initialState();
           state = {

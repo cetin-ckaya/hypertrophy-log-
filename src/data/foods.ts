@@ -21,6 +21,12 @@ export const DEFAULT_FOODS: Record<string, Food> = Object.fromEntries(
     f('chicken', 'Tavuk göğsü (çiğ)', 'g', 165, 31.0, 0, 3.6),
     f('rice', 'Pirinç (kuru)', 'g', 360, 7.0, 79.0, 0.6),
     f('olive_oil', 'Zeytinyağı', 'ml', 884, 0, 0, 100),
+    // Etiket: 200 g için 744 kcal · P 20 · K 162 · Y 1,4 · 2500 mg Creapure.
+    f('gainer', 'Gainer (Creapure kreatinli)', 'g', 372, 10.0, 81.0, 0.7),
+    // Yurt kahvaltısı tahmini: içerik her gün değişiyor, kesin olan 1 haşlanmış
+    // yumurta (~6,3 g protein). 1 g = 1 kcal kurgulandı, yani gramajı doğrudan
+    // tahmini kaloridir: 250 g = 250 kcal · P 10 · K 34 · Y 8.
+    f('dorm_breakfast', 'Yurt kahvaltısı (tahmini)', 'g', 100, 4.0, 13.6, 3.2),
     // Alternatifler
     f('ww_pasta', 'Tam buğday makarna (kuru)', 'g', 348, 13.0, 64.0, 2.5),
     f('sweet_potato', 'Tatlı patates (çiğ)', 'g', 86, 1.6, 20.1, 0.1),
@@ -36,43 +42,41 @@ export const DEFAULT_FOODS: Record<string, Food> = Object.fromEntries(
 );
 
 /**
- * Antrenman günü varsayılan planı — 3.303 kcal · P 167 · K 488 · Y 72.
- * Protein 165 g ve yağ 72 g hedefine göre kurulup, kalan kalori pirinçten
- * tamamlandı. Dinlenme gününde 2. ve 3. öğünün pirinci düşer (~2.910 kcal).
+ * Varsayılan plan — 3.466 kcal · P 160 · K 524 · Y 74 (hedef 3.400–3.500).
+ * Yurt kahvaltısı 250 kcal'lık tahminle sayılır (kesin olan 1 haşlanmış yumurta
+ * protein makrosuna dahil). Kalori her gün aynıdır.
  */
 export const DEFAULT_PLAN: Meal[] = [
   {
     id: 'meal1',
-    name: 'Öğün 1 — Sabah',
-    items: [
-      { foodId: 'oats', amount: 100 },
-      { foodId: 'whey', amount: 30 },
-      { foodId: 'banana', amount: 150 },
-      { foodId: 'milk', amount: 300 },
-      { foodId: 'peanut_butter', amount: 15 },
-    ],
+    name: 'Öğün 1 — Yurt Kahvaltısı',
+    items: [{ foodId: 'dorm_breakfast', amount: 250 }],
+  },
+  {
+    id: 'snack1',
+    name: 'Ara Öğün — Gainer',
+    items: [{ foodId: 'gainer', amount: 200 }],
   },
   {
     id: 'meal2',
     name: 'Öğün 2 — Antrenman sonrası',
     items: [
-      { foodId: 'chicken', amount: 130 },
-      { foodId: 'rice', amount: 240 },
-      { foodId: 'olive_oil', amount: 19 },
+      { foodId: 'chicken', amount: 165 },
+      { foodId: 'rice', amount: 210 },
+      { foodId: 'olive_oil', amount: 25 },
     ],
   },
   {
     id: 'meal3',
     name: 'Öğün 3 — Akşam',
     items: [
-      { foodId: 'chicken', amount: 120 },
-      { foodId: 'rice', amount: 225 },
-      { foodId: 'olive_oil', amount: 19 },
+      { foodId: 'chicken', amount: 160 },
+      { foodId: 'rice', amount: 205 },
+      { foodId: 'olive_oil', amount: 25 },
     ],
   },
 ];
 
-/** Kalori ayarlamalarında gramajı değiştirilecek karbonhidrat kaynağı. */
 export const CARB_SOURCE_ID = 'rice';
 /** Protein tabanının altına düşülürse artırılacak protein kaynağı. */
 export const PROTEIN_SOURCE_ID = 'chicken';
