@@ -37,7 +37,11 @@ export const SettingsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
   const [editing, setEditing] = useState<{ id: string | null } | null>(null);
 
   const avgWeight = latestAverage(state.weights);
-  const targets = computeTargets(state.profile, avgWeight ?? state.profile.startWeightKg);
+  const targets = computeTargets(
+    state.profile,
+    avgWeight ?? state.profile.startWeightKg,
+    state.settings.proteinFloor
+  );
   const applied =
     state.calorieTarget === targets.kcal &&
     state.macroTargets.protein === targets.protein &&

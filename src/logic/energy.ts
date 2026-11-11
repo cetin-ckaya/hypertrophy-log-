@@ -60,9 +60,14 @@ export const bmr = (sex: Sex, weightKg: number, heightCm: number, age: number): 
 
 /**
  * Profil + güncel kilodan günlük kalori ve makro hedeflerini üretir.
- * Protein g/kg üzerinden, yağ kalorinin yüzdesi olarak; kalan karbonhidrat.
+ * Protein g/kg üzerinden (ama kullanıcının protein tabanının altına inmeden),
+ * yağ kalorinin yüzdesi olarak; kalan karbonhidrat.
  */
-export const computeTargets = (profile: Profile, weightKg: number): EnergyTargets => {
+export const computeTargets = (
+  profile: Profile,
+  weightKg: number,
+  proteinFloor = 0
+): EnergyTargets => {
   const activity = activityOf(profile.activity);
   const goal = goalOf(profile.goal);
 
@@ -70,7 +75,7 @@ export const computeTargets = (profile: Profile, weightKg: number): EnergyTarget
   const tdee = base * activity.factor;
   const kcal = Math.max(1200, tdee + goal.kcalDelta);
 
-  const protein = Math.round(goal.proteinPerKg * weightKg);
+  const protein = Math.max(proteinFloor, Math.round(goal.proteinPerKg * weightKg));
   const fat = Math.max(Math.round(0.6 * weightKg), Math.round((kcal * goal.fatRatio) / 9));
   const carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4));
 

@@ -13,7 +13,6 @@ import {
   kcalToCarbGrams,
   planMacros,
 } from '../logic/nutrition';
-import { computeTargets } from '../logic/energy';
 import { buildSuggestion } from '../logic/progression';
 import { decideAdjustment, weeklyTrend } from '../logic/weight';
 import {
@@ -162,6 +161,26 @@ const initialState = (): State => ({
  * plandan tazelenir, yenmiş öğünler kayıt olduğu için olduğu gibi kalır.
  * Geçmiş günlere dokunulmaz.
  */
+/**
+ * v9 düzeltmesi: eski sürümde "çiğ" diye kayıtlı tavuk/hindi göğsü aslında
+ * pişmiş değerleri taşıyordu. Değer düzeltilirken gramaj protein oranıyla
+ * ölçeklenir; böylece plan ve geçmiş günlerin toplamları değişmez.
+ */
+const LEGACY_RAW_FIXES: { id: string; legacy: Pick<Food, 'kcal' | 'protein'> }[] = [
+  { id: 'chicken', legacy: { kcal: 165, protein: 31 } },
+  { id: 'turkey', legacy: { kcal: 135, protein: 29 } },
+];
+
+const scaleItems = <T extends Meal>(meals: T[], ratios: Record<string, number>, step: number): T[] =>
+  meals.map((m) => ({
+    ...m,
+    items: m.items.map((i) =>
+      ratios[i.foodId]
+        ? { ...i, amount: Math.max(step, Math.round((i.amount * ratios[i.foodId]) / step) * step) }
+        : i
+    ),
+  }));
+
 const syncTodayWithPlan = (
   dayLogs: Record<string, DayLog>,
   plan: Meal[]
@@ -698,7 +717,7 @@ export const useStore = create<Store>()(
     }),
     {
       name: 'hipertrofi-store-v1',
-      version: 8,
+      version: 9,
       storage: createJSONStorage(() => AsyncStorage),
       /**
        * v3: öğün planı protein 165 g / yağ 72 g hedefine göre yeniden kuruldu,
@@ -715,6 +734,10 @@ export const useStore = create<Store>()(
        *     (etiketteki 744 kcal) olarak düzeltildi, hedef 3.470 kcal.
        * v8: protein 160 g'a indirildi (tavuk göğsü azaltıldı, fark pirinçten),
        *     protein tabanı da 160 g.
+       * v9: tavuk/hindi göğsünün "çiğ" değerleri gerçek çiğ değerlerle
+       *     düzeltildi (önceden pişmiş değerlerdi). Kullanıcı bu besinleri
+       *     elle değiştirmediyse gramajlar protein oranıyla ölçeklenir.
+       *     Pişmiş tavuk göğsü ve pişmiş pirinç veritabanına eklendi.
        */
       migrate: (persisted, version) => {
         let state = persisted as Partial<State> | undefined;
@@ -742,6 +765,45 @@ export const useStore = create<Store>()(
               { date: todayKey(), kcal: base.calorieTarget },
             ],
           };
+        }
+        if (version < 9) {
+          const base = initialState();
+          const foods: Record<string, Food> = { ...base.foods, ...(state.foods ?? {}) };
+          const ratios: Record<string, number> = {};
+          for (const { id, legacy } of LEGACY_RAW_FIXES) {
+            const cur = foods[id];
+            // Kullanıcı değeri elle değiştirdiyse dokunma.
+            if (cur && cur.kcal === legacy.kcal && cur.protein === legacy.protein) {
+              ratios[id] = legacy.protein / base.foods[id].protein;
+              foods[id] = base.foods[id];
+            }
+          }
+          if (Object.keys(ratios).length > 0) {
+            // Plan v8'e bu sürümde (aynı geçişte) geldiyse zaten yeni gramajlarda.
+            // v8 varsayılan planına hiç dokunulmadıysa doğrudan yeni varsayılana geç
+            // (ölçekleme yuvarlaması 225/220 yerine 225/225 versin diye).
+            const v8Default = base.plan.map((m, i) => ({
+              ...m,
+              items: m.items.map((it) =>
+                it.foodId === 'chicken' ? { ...it, amount: i === 2 ? 165 : 160 } : it
+              ),
+            }));
+            const current = state.plan ?? base.plan;
+            const plan =
+              version < 8 ||
+              (ratios.chicken !== undefined && JSON.stringify(current) === JSON.stringify(v8Default))
+                ? base.plan
+                : scaleItems(current, ratios, 5);
+            const dayLogs = Object.fromEntries(
+              Object.entries(state.dayLogs ?? {}).map(([d, log]) => [
+                d,
+                { ...log, meals: scaleItems(log.meals, ratios, 1) },
+              ])
+            );
+            state = { ...state, foods, plan, dayLogs: syncTodayWithPlan(dayLogs, plan) };
+          } else {
+            state = { ...state, foods };
+          }
         }
         if (version < 5) {
           const base = initialState();
