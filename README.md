@@ -87,7 +87,8 @@ npm run build:web  # PWA çıktısı -> dist/
   yalnızca etiket olarak tutulur, gramajları değiştirmez.
 - Gramajları o güne özel düzenleyebilir, besin ekleyip çıkarabilirsin;
   "Plan" sekmesinden varsayılan planı değiştirirsin (geçmiş günler korunur).
-- 20 besinlik veritabanı (100 g / 100 ml, çiğ-kuru ölçü) + kendi besinini ekleme.
+- 22 besinlik veritabanı (100 g / 100 ml, USDA referans değerleri; çiğ-kuru ölçü, ayrıca
+  pişmiş tavuk göğsü ve pişmiş pirinç) + kendi besinini ekleme.
 
 ### Profilden otomatik kalori ve makro hesabı
 
@@ -148,14 +149,14 @@ değişmez. Uyguladıktan sonra aşağıdaki haftalık otomatik ayar bu başlang
 Hedefler: **3.470 kcal · protein 160 g · yağ 74 g**. Protein ve yağ sabit
 tutulup kalan kalori pirinçten tamamlandığı için karbonhidrat **524 g**'a çıkar.
 
-Plan toplamı: **3.466 kcal · P 160 g · K 524 g · Y 74 g** (hedef aralığı 3.400–3.500).
+Plan toplamı: **3.470 kcal · P 160 g · K 524 g · Y 74 g** (hedef aralığı 3.400–3.500).
 
 | | Öğün 1 — Yurt Kahvaltısı | Ara Öğün — Gainer | Öğün 2 — Antrenman sonrası | Öğün 3 — Akşam |
 |---|---|---|---|---|
-| | Yurt kahvaltısı (tahmini) 250 g | Gainer 200 g | Tavuk göğsü (çiğ) 165 g | Tavuk göğsü (çiğ) 160 g |
+| | Yurt kahvaltısı (tahmini) 250 g | Gainer 200 g | Tavuk göğsü (çiğ) 225 g | Tavuk göğsü (çiğ) 225 g |
 | | | | Pirinç (kuru) 210 g | Pirinç (kuru) 205 g |
 | | | | Zeytinyağı 25 ml | Zeytinyağı 25 ml |
-| **Toplam** | 250 kcal · P 10 · K 34 · Y 8 | 744 kcal · P 20 · K 162 · Y 1 | 1.249 kcal · P 66 · K 166 · Y 32 | 1.223 kcal · P 64 · K 162 · Y 32 |
+| **Toplam** | 250 kcal · P 10 · K 34 · Y 8 | 744 kcal · P 20 · K 162 · Y 1 | 1.247 kcal · P 65 · K 166 · Y 32 | 1.229 kcal · P 65 · K 162 · Y 32 |
 
 **Yurt kahvaltısı** içeriği her gün değiştiği için tek bir tahmini besinle
 sayılır: `Yurt kahvaltısı (tahmini)`, 100 g başına 100 kcal · P 4 · K 13,6 · Y 3,2.
@@ -168,6 +169,11 @@ Creapure® kreatin verir; veritabanında 100 g başına 372 kcal · P 10 · K 81
 Y 0,7 olarak tutulur.
 
 **Dinlenme günü:** plan değişmez — kalori her gün aynıdır.
+
+**Çiğ mi pişmiş mi:** plandaki tavuk göğsü ve pirinç gramajları **çiğ / kuru**
+ağırlıktır (225 g çiğ tavuk ≈ 160–170 g pişmiş, 210 g kuru pirinç ≈ 550 g pişmiş).
+Tabağı pişmiş tartıyorsan veritabanındaki "Tavuk göğsü (pişmiş)" ve
+"Pirinç (pişmiş)" besinlerini kullan.
 
 Gramajlar Beslenme → "Plan" sekmesinden değiştirilebilir; hedef kalori de
 Ayarlar'dan ayarlanır. Plan ile hedef arasında 40 kcal'dan fazla fark oluşursa
