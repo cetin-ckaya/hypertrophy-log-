@@ -25,6 +25,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Tip hatası varsa yayınlamadan dur; telefondaki çalışan sürüm bozulmasın.
+      - run: npm run typecheck
       - run: npm run build:web
       - uses: actions/configure-pages@v5
         with:
