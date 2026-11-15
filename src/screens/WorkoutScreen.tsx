@@ -263,6 +263,49 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
                 </>
               )}
             </Section>
+            {nextDay.kind === 'workout' ? (
+              <Section>
+                <Label>Bugünün hareketleri · geçen sefer</Label>
+                {nextDay.exercises.map((ex, i) => {
+                  const meta = exerciseById(ex.exerciseId);
+                  const previous = lastPerformance(state.sessions, ex.exerciseId, nextDay.id);
+                  const suggestion = buildSuggestion(
+                    state.sessions,
+                    ex.exerciseId,
+                    nextDay.id,
+                    ex.repMax,
+                    state.settings
+                  );
+                  const flag =
+                    suggestion.kind === 'increase'
+                      ? 'Ağırlığı artır'
+                      : suggestion.kind === 'stall'
+                        ? 'Takıldın'
+                        : null;
+                  return (
+                    <View key={`${ex.exerciseId}-${i}`} style={styles.previewRow}>
+                      <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }} gap={spacing.sm}>
+                        <Text style={[font.bodyStrong, { flex: 1 }]}>
+                          {i + 1}. {meta?.name ?? ex.exerciseId}
+                        </Text>
+                        <Text style={[font.labelSm, font.num]}>
+                          {ex.sets}×{ex.repMin === ex.repMax ? ex.repMin : `${ex.repMin}-${ex.repMax}`}
+                        </Text>
+                      </Row>
+                      <Row gap={spacing.sm} style={{ marginTop: 2, flexWrap: 'wrap' }}>
+                        <Text style={[font.small, font.num, { color: colors.muted }]}>
+                          {previous ? formatSets(previous.exercise.sets) : 'Kayıt yok'}
+                        </Text>
+                        {flag ? <Text style={styles.previewFlag}>{flag}</Text> : null}
+                      </Row>
+                    </View>
+                  );
+                })}
+                {nextDay.cardio ? (
+                  <Text style={[font.small, { marginTop: spacing.sm }]}>Kardiyo: {nextDay.cardio}</Text>
+                ) : null}
+              </Section>
+            ) : null}
             <Section>
               <Label>Başka bir gün çalış</Label>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -369,6 +412,18 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   tipText: { fontFamily: fonts.bold, fontSize: 13, color: colors.accentDeep, lineHeight: 18 },
+  previewRow: {
+    borderBottomWidth: rules.light,
+    borderBottomColor: colors.ruleLight,
+    paddingVertical: 10,
+  },
+  previewFlag: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: colors.accent,
+  },
   setNo: { width: 26, fontFamily: fonts.bold, fontSize: 12, color: colors.muted },
   check: {
     width: 46,
