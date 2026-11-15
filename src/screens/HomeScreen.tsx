@@ -19,7 +19,7 @@ import {
   Sparkline,
 } from '../components/ui';
 import { cycleDayOf, dayById, getProgram } from '../data/program';
-import { formatLong, todayKey } from '../logic/date';
+import { formatLong, formatRelative, todayKey } from '../logic/date';
 import { eatenMacros } from '../logic/nutrition';
 import { sessionSetCount, sessionVolume } from '../logic/progression';
 import { latestAverage, sortedWeights, weeklyTrend } from '../logic/weight';
@@ -235,7 +235,7 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
               <Label>Son antrenman</Label>
               <Row style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <Text style={font.h3}>{dayById(lastSession.dayId)?.name}</Text>
-                <Text style={[font.small, font.num]}>{lastSession.date}</Text>
+                <Text style={[font.small, font.num]}>{formatRelative(lastSession.date)}</Text>
               </Row>
               <Text style={[font.small, font.num]}>
                 {sessionSetCount(lastSession)} set ·{' '}
