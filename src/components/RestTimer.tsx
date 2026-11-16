@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { restDoneAlert } from '../logic/alert';
 
 import { mmss } from '../logic/date';
 import { colors, font, fonts, rules, spacing } from '../theme';
@@ -30,7 +32,7 @@ export const RestBar = ({
     if (endsAt === null) return;
     if (remaining <= 0 && !fired.current) {
       fired.current = true;
-      if (Platform.OS !== 'web') Vibration.vibrate([0, 300, 150, 300]);
+      restDoneAlert();
     }
     if (remaining > 0) fired.current = false;
   }, [remaining, endsAt]);
