@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { RestBar } from '../components/RestTimer';
+import { unlockAlert } from '../logic/alert';
 import { CheckIcon, ChevronLeftIcon } from '../components/icons';
 import {
   Button,
@@ -53,7 +54,11 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
 
-  const startRest = () => setRestEndsAt(Date.now() + state.settings.restSeconds * 1000);
+  const startRest = () => {
+    // Dokunuş anında ses kilidini aç; sayaç bitince bip çalabilsin (iOS).
+    unlockAlert();
+    setRestEndsAt(Date.now() + state.settings.restSeconds * 1000);
+  };
   const nextDay = cycleDayOf(state.programId, state.cycleIndex);
   const day = active ? dayById(active.dayId) : nextDay;
   const prs = personalRecords(state.sessions);
