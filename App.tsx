@@ -18,6 +18,7 @@ import { NutritionScreen } from './src/screens/NutritionScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
 import { WorkoutScreen } from './src/screens/WorkoutScreen';
+import { useScreenWakeLock } from './src/logic/wakeLock';
 import { useStore } from './src/store/store';
 import { colors, font, rules } from './src/theme';
 
@@ -26,6 +27,8 @@ const Shell = () => {
   const hasActive = useStore((s) => s.activeSession !== null);
   const [tab, setTab] = useState<TabKey>('home');
   const insets = useSafeAreaInsets();
+  // Antrenman açıkken ekran kararmasın; dinlenme sayacı ve bip çalışmaya devam etsin.
+  useScreenWakeLock(hasActive);
 
   if (!hydrated) return <Loading />;
 
