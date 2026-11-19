@@ -51,13 +51,12 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
   const program = getProgram(state.programId);
   const active = state.activeSession;
   const [sub, setSub] = useState<Sub>('session');
-  const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
 
   const startRest = () => {
     // Dokunuş anında ses kilidini aç; sayaç bitince bip çalabilsin (iOS).
     unlockAlert();
-    setRestEndsAt(Date.now() + state.settings.restSeconds * 1000);
+    state.startRest();
   };
   const nextDay = cycleDayOf(state.programId, state.cycleIndex);
   const day = active ? dayById(active.dayId) : nextDay;
@@ -112,10 +111,10 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
               </Text>
             </Row>
             <RestBar
-              endsAt={restEndsAt}
+              endsAt={state.restEndsAt ?? null}
               onStart={startRest}
-              onStop={() => setRestEndsAt(null)}
-              onExtend={(sec) => setRestEndsAt((e) => (e === null ? null : e + sec * 1000))}
+              onStop={state.stopRest}
+              onExtend={state.extendRest}
             />
 
             {active.exercises.map((ex, exIndex) => {
@@ -235,7 +234,6 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
               onPress={() =>
                 confirm('Antrenmanı tamamla', 'Kayıt edilip döngü bir sonraki güne geçecek.', () => {
                   state.completeWorkout();
-                  setRestEndsAt(null);
                   go('home');
                 })
               }
@@ -247,7 +245,6 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
               onPress={() =>
                 confirm('Antrenmanı iptal et', 'Girdiğin setler silinecek.', () => {
                   state.discardWorkout();
-                  setRestEndsAt(null);
                 })
               }
             />

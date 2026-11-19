@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Platform, Vibration } from 'react-native';
 
 /**
@@ -82,4 +83,19 @@ export const restDoneAlert = () => {
   } catch {
     /* yok say */
   }
+};
+
+/**
+ * Dinlenme sayacının bitişini uygulama genelinde izler: kullanıcı hangi
+ * sekmede olursa olsun süre dolunca bir kez uyarı çalar. Zaten geçmiş bir
+ * bitiş anı (ör. uygulama sonradan açıldıysa) için uyarı çalmaz.
+ */
+export const useRestAlarm = (endsAt: number | null) => {
+  useEffect(() => {
+    if (endsAt === null) return;
+    const ms = endsAt - Date.now();
+    if (ms <= 0) return;
+    const t = setTimeout(restDoneAlert, ms);
+    return () => clearTimeout(t);
+  }, [endsAt]);
 };
