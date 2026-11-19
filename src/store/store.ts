@@ -68,6 +68,8 @@ type State = {
   cycleIndex: number;
   sessions: WorkoutSession[];
   activeSession: WorkoutSession | null;
+  /** Dinlenme sayacının bitiş anı (ms). Sekme değişse de, uygulama yeniden açılsa da korunur. */
+  restEndsAt: number | null;
 
   foods: Record<string, Food>;
   plan: Meal[];
@@ -98,6 +100,9 @@ type Actions = {
   removeSet: (exIndex: number) => void;
   completeWorkout: () => void;
   discardWorkout: () => void;
+  startRest: () => void;
+  extendRest: (seconds: number) => void;
+  stopRest: () => void;
   deleteSession: (id: string) => void;
 
   // Beslenme
@@ -145,6 +150,7 @@ const initialState = (): State => ({
   cycleIndex: 0,
   sessions: [],
   activeSession: null,
+  restEndsAt: null,
   foods: clone(DEFAULT_FOODS),
   plan: clone(DEFAULT_PLAN),
   calorieTarget: 3470,
@@ -357,12 +363,18 @@ export const useStore = create<Store>()(
           return {
             sessions: [...s.sessions, finished],
             activeSession: null,
+            restEndsAt: null,
             cycleIndex: at >= 0 ? (at + 1) % cycle.length : s.cycleIndex,
             dayLogs,
           };
         }),
 
-      discardWorkout: () => set({ activeSession: null }),
+      discardWorkout: () => set({ activeSession: null, restEndsAt: null }),
+
+      startRest: () => set((s) => ({ restEndsAt: Date.now() + s.settings.restSeconds * 1000 })),
+      extendRest: (seconds) =>
+        set((s) => (s.restEndsAt === null ? s : { restEndsAt: s.restEndsAt + seconds * 1000 })),
+      stopRest: () => set({ restEndsAt: null }),
 
       deleteSession: (id) => set((s) => ({ sessions: s.sessions.filter((x) => x.id !== id) })),
 

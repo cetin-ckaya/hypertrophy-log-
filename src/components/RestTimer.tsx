@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { restDoneAlert } from '../logic/alert';
 
 import { mmss } from '../logic/date';
 import { colors, font, fonts, rules, spacing } from '../theme';
@@ -18,7 +17,6 @@ export const RestBar = ({
   onExtend: (seconds: number) => void;
 }) => {
   const [now, setNow] = useState(Date.now());
-  const fired = useRef(false);
 
   useEffect(() => {
     if (endsAt === null) return;
@@ -28,14 +26,8 @@ export const RestBar = ({
 
   const remaining = endsAt === null ? 0 : Math.max(0, (endsAt - now) / 1000);
 
-  useEffect(() => {
-    if (endsAt === null) return;
-    if (remaining <= 0 && !fired.current) {
-      fired.current = true;
-      restDoneAlert();
-    }
-    if (remaining > 0) fired.current = false;
-  }, [remaining, endsAt]);
+  // Bitiş uyarısı (bip/titreşim) App seviyesinde useRestAlarm ile çalınır;
+  // böylece başka sekmedeyken de duyulur.
 
   const running = endsAt !== null && remaining > 0;
   const done = endsAt !== null && remaining <= 0;
