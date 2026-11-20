@@ -47,8 +47,8 @@ export const EXERCISES: Record<string, Exercise> = Object.fromEntries(
     // Omuz
     ex('shoulder_press_machine', 'Shoulder Press Machine', 'omuz', 'compound'),
     ex('cable_front_raise', 'Cable Front Raises', 'omuz', 'isolation'),
-    ex('cable_lateral_raise', 'Cable Lateral Raises', 'omuz', 'isolation'),
-    ex('db_lateral_raise', 'Dumbbell Lateral Raises', 'omuz', 'isolation'),
+    ex('cable_lateral_raise', 'Cable Lateral Raise', 'omuz', 'isolation'),
+    ex('db_lateral_raise', 'Dumbbell Lateral Raise', 'omuz', 'isolation'),
     ex('rear_delt_cable', 'Rear Delt Cable', 'omuz', 'isolation'),
     ex('face_pull', 'Face Pull', 'omuz', 'isolation'),
     // Kalça
@@ -62,12 +62,28 @@ export const EXERCISES: Record<string, Exercise> = Object.fromEntries(
     ex('bulgarian_split_squat', 'Bulgarian Split Squat', 'bacak', 'compound'),
     ex('step_up_db', 'Step-up Dumbbell', 'bacak', 'compound'),
     ex('leg_press', 'Leg Press', 'bacak', 'compound'),
-    ex('leg_extension', 'Leg Extensions', 'bacak', 'isolation'),
+    ex('leg_extension', 'Leg Extension', 'bacak', 'isolation'),
     ex('sm_rdl', 'SM RDL', 'bacak', 'compound'),
     ex('lying_leg_curl', 'Lying Leg Curl', 'bacak', 'isolation'),
     ex('abductor_machine', 'Hip Abduction Machine', 'kalca', 'isolation'),
     ex('adductor_machine', 'Adductor Machine', 'bacak', 'isolation'),
     ex('calf_raise_machine', 'Calf Raises Machine', 'kalf', 'isolation'),
+    // Torso / Limbs programı
+    ex('machine_chest_fly', 'Machine Chest Fly', 'gogus', 'isolation'),
+    ex('incline_db_bench', 'Incline Dumbbell Bench Press', 'gogus', 'compound'),
+    ex('one_arm_lat_pulldown', 'One Arm Lat Pulldown', 'sirt', 'compound'),
+    ex('cable_crunch', 'Cable Crunch', 'karin', 'isolation'),
+    ex('one_arm_db_preacher', 'One Arm Dumbbell Preacher Curl', 'biceps', 'isolation'),
+    // Limbs A ve Limbs B'de aynı hareket: geçmişi ortak.
+    ex('cable_oh_triceps_ext', 'Cable Overhead Tricep Extension', 'triceps', 'isolation'),
+    ex('seated_triceps_pushdown', 'Seated Triceps Pushdown', 'triceps', 'isolation'),
+    ex('smith_calf_raise', 'Smith Machine Calf Raise', 'kalf', 'isolation'),
+    ex('low_high_cable_fly', 'Low to High Cable Fly', 'gogus', 'isolation'),
+    ex('iso_lateral_chest_press', 'Iso-Lateral Chest Press', 'gogus', 'compound'),
+    ex('kelso_shrug', 'Kelso Shrug', 'trapez', 'isolation'),
+    ex('lengthened_db_curl', 'Lengthened Dumbbell Curl', 'biceps', 'isolation'),
+    ex('single_arm_triceps_pushdown', 'Single Arm Tricep Pushdown', 'triceps', 'isolation'),
+    ex('squat', 'Squat', 'bacak', 'compound'),
   ].map((e) => [e.id, e])
 );
 
@@ -238,6 +254,92 @@ const GLUTE_DAYS: Record<string, TrainingDay> = {
   rest: REST,
 };
 
+/** "5-9 / 8-12" → [[5, 9], [8, 12]] · "6-10" → [[6, 10]] */
+const parseRanges = (text: string): [number, number][] =>
+  text.split('/').map((part) => {
+    const [a, b] = part.trim().split('-').map(Number);
+    return [a, b ?? a];
+  });
+
+/** Aralık + RIR tanımlı hareket. */
+const r = (
+  exerciseId: string,
+  sets: number,
+  ranges: string,
+  rir: string,
+  section: string
+): PlannedExercise => {
+  const parsed = parseRanges(ranges);
+  return {
+    exerciseId,
+    sets,
+    repMin: Math.min(...parsed.map((x) => x[0])),
+    repMax: Math.max(...parsed.map((x) => x[1])),
+    section,
+    ranges: parsed,
+    rir,
+  };
+};
+
+const HEAVY = '5-9 / 8-12';
+
+/**
+ * Torso / Limbs — haftanın sabit günlerine bağlı 4 günlük program.
+ * Biceps ve torso günlerindeki sırt hareketleri RIR 1-2, diğer her şey RIR 0-1.
+ * Limbs günlerinde biceps ve triceps dönüşümlü sıralanmıştır.
+ */
+const TORSO_LIMBS_DAYS: Record<string, TrainingDay> = {
+  torso_a: g('torso_a', 'Torso A', [
+    r('db_lateral_raise', 2, HEAVY, '0-1', 'Yan omuz'),
+    r('machine_chest_fly', 2, HEAVY, '0-1', 'Göğüs'),
+    r('incline_db_bench', 1, '6-10', '0-1', 'Göğüs'),
+    r('cable_lateral_raise', 1, '6-10', '0-1', 'Yan omuz'),
+    r('one_arm_lat_pulldown', 3, HEAVY, '1-2', 'Sırt'),
+    r('tbar_row', 2, HEAVY, '1-2', 'Sırt'),
+    r('cable_crunch', 2, '8-12', '0-1', 'Karın'),
+  ]),
+  limbs_a: g('limbs_a', 'Limbs A', [
+    r('one_arm_db_preacher', 2, HEAVY, '1-2', 'Biceps'),
+    r('cable_oh_triceps_ext', 2, HEAVY, '0-1', 'Triceps'),
+    r('hammer_curl', 1, '6-10', '1-2', 'Biceps'),
+    r('seated_triceps_pushdown', 1, '6-10', '0-1', 'Triceps'),
+    r('bulgarian_split_squat', 1, '6-10', '0-1', 'Quadriceps'),
+    r('lying_leg_curl', 1, '6-10', '0-1', 'Hamstring'),
+    r('leg_extension', 1, '6-10', '0-1', 'Quadriceps'),
+    r('smith_calf_raise', 1, '6-10', '0-1', 'Kalf'),
+  ]),
+  torso_b: g('torso_b', 'Torso B', [
+    r('db_lateral_raise', 2, HEAVY, '0-1', 'Yan omuz'),
+    r('low_high_cable_fly', 2, HEAVY, '0-1', 'Göğüs'),
+    r('iso_lateral_chest_press', 2, HEAVY, '0-1', 'Göğüs'),
+    r('cable_lateral_raise', 2, HEAVY, '0-1', 'Yan omuz'),
+    r('lat_pulldown', 3, HEAVY, '1-2', 'Sırt'),
+    r('kelso_shrug', 3, HEAVY, '1-2', 'Üst sırt'),
+    r('cable_crunch', 2, '8-12', '0-1', 'Karın'),
+  ]),
+  limbs_b: g('limbs_b', 'Limbs B', [
+    r('one_arm_db_preacher', 2, HEAVY, '1-2', 'Biceps'),
+    r('cable_oh_triceps_ext', 3, HEAVY, '0-1', 'Triceps'),
+    r('lengthened_db_curl', 2, HEAVY, '1-2', 'Biceps'),
+    r('single_arm_triceps_pushdown', 2, HEAVY, '0-1', 'Triceps'),
+    r('squat', 2, HEAVY, '0-1', 'Quadriceps'),
+    r('lying_leg_curl', 2, HEAVY, '0-1', 'Hamstring'),
+    r('leg_extension', 2, HEAVY, '0-1', 'Quadriceps'),
+  ]),
+  rest: REST,
+};
+
+/**
+ * Limbs B Preacher Curl: 1. sette bu eşik (ağırlık ve tekrar) yakalanınca
+ * 3. set eklenmesi önerilir.
+ */
+export const PREACHER_THRESHOLD = {
+  dayId: 'limbs_b',
+  exerciseId: 'one_arm_db_preacher',
+  weight: 12.5,
+  reps: 9,
+} as const;
+
 export const PROGRAMS: Record<string, Program> = {
   hipertrofi: {
     id: 'hipertrofi',
@@ -255,9 +357,21 @@ export const PROGRAMS: Record<string, Program> = {
     // Gün 1 → Gün 2 → Gün 3 → Dinlenme → Gün 4 → Gün 5 → Dinlenme
     cycle: ['g_glute1', 'g_back_shoulder', 'g_glute2', 'rest', 'g_arms', 'g_glute3', 'rest'],
   },
+  torso_limbs: {
+    id: 'torso_limbs',
+    name: 'Torso / Limbs · 4 gün',
+    description:
+      'Pzt Torso A · Sal Limbs A · Per Torso B · Cum Limbs B · tempo 3-1-0-1 · limbs günlerinde biceps/triceps dönüşümlü',
+    days: TORSO_LIMBS_DAYS,
+    // Pazartesiden başlayan hafta; gün seçimi schedule üzerinden yapılır.
+    cycle: ['torso_a', 'limbs_a', 'rest', 'torso_b', 'limbs_b', 'rest', 'rest'],
+    // Date.getDay(): 0 Pazar, 1 Pazartesi … 6 Cumartesi
+    schedule: ['rest', 'torso_a', 'limbs_a', 'rest', 'torso_b', 'limbs_b', 'rest'],
+    tempo: '3-1-0-1',
+  },
 };
 
-export const DEFAULT_PROGRAM_ID = 'hipertrofi';
+export const DEFAULT_PROGRAM_ID = 'torso_limbs';
 
 /**
  * Kullanıcının kendi yazdığı program ve hareketler.
@@ -267,6 +381,18 @@ export const DEFAULT_PROGRAM_ID = 'hipertrofi';
  */
 let customPrograms: Record<string, Program> = {};
 let customExercises: Record<string, Exercise> = {};
+/** `${dayId}:${exerciseId}` → plana kalıcı eklenen set sayısı (ör. Preacher 3. set). */
+let extraSets: Record<string, number> = {};
+
+export const syncExtraSets = (map: Record<string, number>) => {
+  extraSets = map ?? {};
+};
+
+export const extraSetKey = (dayId: string, exerciseId: string) => `${dayId}:${exerciseId}`;
+
+/** Planlanan set sayısı (kalıcı eklenen setler dahil). */
+export const plannedSetCount = (dayId: string, pe: PlannedExercise): number =>
+  pe.sets + (extraSets[extraSetKey(dayId, pe.exerciseId)] ?? 0);
 
 export const syncCustomContent = (
   programs: Record<string, Program>,
@@ -302,6 +428,77 @@ export const cycleDayOf = (programId: string, index: number): TrainingDay => {
   return program.days[program.cycle[index % program.cycle.length]] ?? REST;
 };
 
+const weekdayOf = (dateKey: string): number => {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return new Date(y, m - 1, d).getDay();
+};
+
+/**
+ * Belirli bir tarihte yapılacak gün. Haftalık programda takvimden,
+ * döngüsel programda döngü indeksinden çözülür.
+ */
+export const dayForDate = (programId: string, cycleIndex: number, dateKey: string): TrainingDay => {
+  const program = getProgram(programId);
+  if (program.schedule) return program.days[program.schedule[weekdayOf(dateKey)]] ?? REST;
+  return cycleDayOf(programId, cycleIndex);
+};
+
+export const isScheduled = (programId: string): boolean => Boolean(getProgram(programId).schedule);
+
+export const WEEKDAY_NAMES = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+export const WEEKDAY_SHORT = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+
+/** Haftalık programda bugünden sonraki ilk antrenman günü (bugün hariç). */
+export const nextScheduledWorkout = (
+  programId: string,
+  dateKey: string
+): { day: TrainingDay; weekday: number; inDays: number } | null => {
+  const program = getProgram(programId);
+  if (!program.schedule) return null;
+  const today = weekdayOf(dateKey);
+  for (let i = 1; i <= 7; i++) {
+    const wd = (today + i) % 7;
+    const day = program.days[program.schedule[wd]];
+    if (day && day.kind === 'workout') return { day, weekday: wd, inDays: i };
+  }
+  return null;
+};
+
+/** i. setin hedef tekrar aralığı. */
+export const setRange = (
+  ex: { repMin: number; repMax: number; ranges?: [number, number][] },
+  i: number
+): [number, number] => {
+  const ranges = ex.ranges;
+  if (!ranges || ranges.length === 0) return [ex.repMin, ex.repMax];
+  return ranges[Math.min(i, ranges.length - 1)];
+};
+
+/** "5-9 / 8-12" ya da "6-10" biçiminde aralık etiketi. */
+export const rangeLabel = (ex: { repMin: number; repMax: number; ranges?: [number, number][] }) => {
+  const ranges = ex.ranges && ex.ranges.length > 0 ? ex.ranges : [[ex.repMin, ex.repMax]];
+  return ranges.map(([a, b]) => (a === b ? `${a}` : `${a}-${b}`)).join(' / ');
+};
+
+/** Hareketin altında gösterilen kısa not: tempo, RIR, ağır/hafif set açıklaması. */
+export const exerciseNote = (programTempo: string | undefined, pe: PlannedExercise | undefined) => {
+  if (!pe) return null;
+  const parts: string[] = [];
+  if (programTempo) parts.push(`Tempo ${programTempo}`);
+  if (pe.rir) parts.push(`RIR ${pe.rir}`);
+  if (pe.ranges && pe.ranges.length > 1)
+    parts.push(
+      `1. set ağır (${pe.ranges[0].join('-')}), sonraki set(ler) ~%15-20 hafif (${pe.ranges[
+        pe.ranges.length - 1
+      ].join('-')})`
+    );
+  return parts.length > 0 ? parts.join(' · ') : null;
+};
+
+/** Seans kaydının ait olduğu programın tempo notu. */
+export const programOfDay = (dayId: string): Program | undefined =>
+  Object.values(allPrograms()).find((p) => Boolean(p.days[dayId]));
+
 export const GROUP_NAMES: Record<string, string> = {
   sirt: 'Sırt',
   gogus: 'Göğüs',
@@ -313,4 +510,5 @@ export const GROUP_NAMES: Record<string, string> = {
   onkol: 'Ön Kol',
   kalf: 'Kalf',
   trapez: 'Trapez',
+  karin: 'Karın',
 };

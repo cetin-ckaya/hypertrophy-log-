@@ -389,6 +389,7 @@ const GROUPS: MuscleGroup[] = [
   'onkol',
   'kalf',
   'trapez',
+  'karin',
 ];
 
 const ExercisePicker = ({

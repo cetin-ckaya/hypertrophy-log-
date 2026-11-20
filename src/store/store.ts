@@ -3,7 +3,16 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { CARB_SOURCE_ID, DEFAULT_FOODS, DEFAULT_PLAN } from '../data/foods';
-import { DEFAULT_PROGRAM_ID, cycleDayOf, getProgram, syncCustomContent } from '../data/program';
+import {
+  DEFAULT_PROGRAM_ID,
+  dayForDate,
+  extraSetKey,
+  getProgram,
+  plannedSetCount,
+  syncCustomContent,
+  syncExtraSets,
+} from '../data/program';
+import { SEED_ARM, SEED_SESSIONS, SEED_WEIGHTS } from '../data/seed';
 import { addDays, daysBetween, lastSunday, todayKey } from '../logic/date';
 import {
   buildDayMeals,
@@ -13,7 +22,7 @@ import {
   kcalToCarbGrams,
   planMacros,
 } from '../logic/nutrition';
-import { buildSuggestion } from '../logic/progression';
+import { buildSuggestion, isLogged, lastPerformance } from '../logic/progression';
 import { decideAdjustment, weeklyTrend } from '../logic/weight';
 import {
   Adjustment,
@@ -37,6 +46,13 @@ const DEFAULT_SETTINGS: Settings = {
   isolationIncrement: 1.25,
   proteinFloor: 160,
   autoAdjustEnabled: true,
+  reminders: {
+    weigh: { enabled: true, time: '09:00' },
+    workout: { enabled: true, time: '15:00' },
+    checkin: { enabled: true, time: '20:00' },
+    measure: { enabled: true, time: '09:00' },
+    gainer: { enabled: true, time: '12:00' },
+  },
 };
 
 const DEFAULT_PROFILE: Profile = {
@@ -81,6 +97,15 @@ type State = {
   weights: Record<string, number>;
   pendingAdjustment: Adjustment | null;
   adjustments: Adjustment[];
+
+  /** Kol ölçüsü (cm), tarih → değer. */
+  armMeasurements: Record<string, number>;
+  /** Plana kalıcı eklenen setler: `${dayId}:${exerciseId}` → ek set sayısı. */
+  extraSets: Record<string, number>;
+  /** Uygulama içi hatırlatıcı kartlarının kapatıldığı gün: anahtar → tarih. */
+  dismissedReminders: Record<string, string>;
+  /** Bildirim kodu üretilirken kullanılan hatırlatıcı ayarları (değişti mi diye). */
+  pushSnapshot: string | null;
 };
 
 type Actions = {
@@ -125,6 +150,11 @@ type Actions = {
 
   // Kilo & otomatik ayar
   logWeight: (date: string, kg: number) => void;
+  logArm: (date: string, cm: number) => void;
+  removeArm: (date: string) => void;
+  addExtraSet: (dayId: string, exerciseId: string) => void;
+  dismissReminder: (key: string, date: string) => void;
+  setPushSnapshot: (snapshot: string | null) => void;
   removeWeight: (date: string) => void;
   checkAdjustment: () => void;
   applyAdjustment: () => void;
@@ -160,6 +190,10 @@ const initialState = (): State => ({
   weights: {},
   pendingAdjustment: null,
   adjustments: [],
+  armMeasurements: { ...SEED_ARM },
+  extraSets: {},
+  dismissedReminders: {},
+  pushSnapshot: null,
 });
 
 /**
@@ -211,9 +245,7 @@ export const dayLogFor = (state: State, date: string): DayLog => {
   const existing = state.dayLogs[date];
   if (existing) return existing;
   const isTraining =
-    date === todayKey()
-      ? cycleDayOf(state.programId, state.cycleIndex).kind === 'workout'
-      : true;
+    date === todayKey() ? dayForDate(state.programId, state.cycleIndex, date).kind === 'workout' : true;
   return {
     date,
     isTraining,
@@ -274,7 +306,7 @@ export const useStore = create<Store>()(
       startWorkout: (dayId) => {
         const s = get();
         const program = getProgram(s.programId);
-        const day = dayId ? program.days[dayId] : cycleDayOf(s.programId, s.cycleIndex);
+        const day = dayId ? program.days[dayId] : dayForDate(s.programId, s.cycleIndex, todayKey());
         if (!day || day.kind !== 'workout') return;
         const session: WorkoutSession = {
           id: uid(),
@@ -284,11 +316,19 @@ export const useStore = create<Store>()(
           exercises: day.exercises.map((p) => {
             const sug = buildSuggestion(s.sessions, p.exerciseId, day.id, p.repMax, s.settings);
             const weight = sug.targetWeight ?? 0;
+            // Ağır set + hafif set düzeninde her set geçen seferki kendi ağırlığıyla başlar.
+            const prev = lastPerformance(s.sessions, p.exerciseId, day.id);
+            const prevSets = prev?.exercise.sets ?? [];
             return {
               exerciseId: p.exerciseId,
               repMin: p.repMin,
               repMax: p.repMax,
-              sets: Array.from({ length: p.sets }, () => ({ weight, reps: 0, done: false })),
+              ...(p.ranges ? { ranges: p.ranges } : {}),
+              sets: Array.from({ length: plannedSetCount(day.id, p) }, (_, i) => ({
+                weight: prevSets[i] && isLogged(prevSets[i]) ? prevSets[i].weight : weight,
+                reps: 0,
+                done: false,
+              })),
             };
           }),
         };
@@ -556,6 +596,31 @@ export const useStore = create<Store>()(
         })),
 
       // ---------- Kilo ----------
+      logArm: (date, cm) =>
+        set((s) => ({
+          armMeasurements: { ...s.armMeasurements, [date]: Math.round(cm * 10) / 10 },
+        })),
+
+      removeArm: (date) =>
+        set((s) => {
+          const armMeasurements = { ...s.armMeasurements };
+          delete armMeasurements[date];
+          return { armMeasurements };
+        }),
+
+      addExtraSet: (dayId, exerciseId) =>
+        set((s) => {
+          const key = extraSetKey(dayId, exerciseId);
+          const extraSets = { ...s.extraSets, [key]: (s.extraSets[key] ?? 0) + 1 };
+          syncExtraSets(extraSets);
+          return { extraSets };
+        }),
+
+      setPushSnapshot: (snapshot) => set({ pushSnapshot: snapshot }),
+
+      dismissReminder: (key, date) =>
+        set((s) => ({ dismissedReminders: { ...s.dismissedReminders, [key]: date } })),
+
       logWeight: (date, kg) =>
         set((s) => ({ weights: { ...s.weights, [date]: Math.round(kg * 10) / 10 } })),
 
@@ -686,6 +751,8 @@ export const useStore = create<Store>()(
             dayLogs: s.dayLogs,
             weights: s.weights,
             adjustments: s.adjustments,
+            armMeasurements: s.armMeasurements,
+            extraSets: s.extraSets,
           },
         };
       },
@@ -698,7 +765,11 @@ export const useStore = create<Store>()(
           const base = initialState();
           set({
             profile: { ...base.profile, ...(data.profile ?? {}) },
-            settings: { ...base.settings, ...(data.settings ?? {}) },
+            settings: {
+              ...base.settings,
+              ...(data.settings ?? {}),
+              reminders: { ...base.settings.reminders, ...(data.settings?.reminders ?? {}) },
+            },
             customPrograms: data.customPrograms ?? {},
             customExercises: data.customExercises ?? {},
             programId: data.programId ?? DEFAULT_PROGRAM_ID,
@@ -714,8 +785,11 @@ export const useStore = create<Store>()(
             adjustments: Array.isArray(data.adjustments) ? data.adjustments : [],
             pendingAdjustment: null,
             activeSession: null,
+            armMeasurements: data.armMeasurements ?? {},
+            extraSets: data.extraSets ?? {},
           });
           syncCustomContent(data.customPrograms ?? {}, data.customExercises ?? {});
+          syncExtraSets(data.extraSets ?? {});
           return { ok: true };
         } catch (e) {
           return { ok: false, error: 'JSON okunamadı. Dosyanın tamamını yapıştırdığından emin ol.' };
@@ -724,12 +798,13 @@ export const useStore = create<Store>()(
 
       resetAll: () => {
         syncCustomContent({}, {});
+        syncExtraSets({});
         set({ ...initialState(), hydrated: true });
       },
     }),
     {
       name: 'hipertrofi-store-v1',
-      version: 9,
+      version: 10,
       storage: createJSONStorage(() => AsyncStorage),
       /**
        * v3: öğün planı protein 165 g / yağ 72 g hedefine göre yeniden kuruldu,
@@ -817,6 +892,36 @@ export const useStore = create<Store>()(
             state = { ...state, foods };
           }
         }
+        if (version < 10) {
+          const base = initialState();
+          // Yalnızca ekleme yapılır: var olan antrenman, kilo ve beslenme kayıtlarına dokunulmaz.
+          const sessions = [...(state.sessions ?? [])];
+          for (const seed of SEED_SESSIONS) {
+            if (!sessions.some((x) => x.id === seed.id)) sessions.push(seed);
+          }
+          sessions.sort((a, b) => (a.completedAt ?? a.startedAt) - (b.completedAt ?? b.startedAt));
+          const weights = { ...(state.weights ?? {}) };
+          for (const [d, kg] of Object.entries(SEED_WEIGHTS)) if (weights[d] === undefined) weights[d] = kg;
+          const armMeasurements = { ...SEED_ARM, ...(state.armMeasurements ?? {}) };
+          state = {
+            ...state,
+            sessions,
+            weights,
+            armMeasurements,
+            extraSets: state.extraSets ?? {},
+            dismissedReminders: state.dismissedReminders ?? {},
+            settings: {
+              ...base.settings,
+              ...(state.settings ?? {}),
+              reminders: { ...base.settings.reminders, ...(state.settings?.reminders ?? {}) },
+            },
+            // Yeni program aktif olur; eski programlar listede kalır.
+            programId: 'torso_limbs',
+            cycleIndex: 0,
+            // Eski programdan yarım kalmış bir oturum varsa korunur.
+            activeSession: state.activeSession ?? null,
+          };
+        }
         if (version < 5) {
           const base = initialState();
           state = {
@@ -855,6 +960,7 @@ export const useStore = create<Store>()(
       onRehydrateStorage: () => (state) => {
         // Kayıt defterini store'daki özel içerikle eşitle, sonra ekranları aç.
         syncCustomContent(state?.customPrograms ?? {}, state?.customExercises ?? {});
+        syncExtraSets(state?.extraSets ?? {});
         state?.setHydrated(true);
       },
     }

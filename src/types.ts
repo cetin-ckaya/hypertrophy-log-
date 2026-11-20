@@ -1,6 +1,6 @@
 export type MuscleGroup =
   | 'sirt' | 'gogus' | 'omuz' | 'biceps' | 'triceps'
-  | 'bacak' | 'kalca' | 'onkol' | 'kalf' | 'trapez';
+  | 'bacak' | 'kalca' | 'onkol' | 'kalf' | 'trapez' | 'karin';
 
 export type ExerciseType = 'compound' | 'isolation';
 
@@ -17,6 +17,14 @@ export type PlannedExercise = {
   repMin: number;
   repMax: number;
   section: string;
+  /**
+   * Set bazlı tekrar aralıkları ([min, max]). Örn. "5-9 / 8-12" için
+   * [[5, 9], [8, 12]]: 1. set ağır, sonraki setler son aralığı kullanır.
+   * Yoksa tüm setler repMin–repMax.
+   */
+  ranges?: [number, number][];
+  /** Hedef RIR (tükenişe kalan tekrar), örn. "0-1". */
+  rir?: string;
 };
 
 export type DayKind = 'workout' | 'rest';
@@ -37,6 +45,13 @@ export type Program = {
   days: Record<string, TrainingDay>;
   /** Döngü sırası — gün id'leri, 'rest' dahil. */
   cycle: string[];
+  /**
+   * Haftanın sabit günlerine bağlı programlar için: Date.getDay() sırasıyla
+   * (0 = Pazar … 6 = Cumartesi) gün id'leri. Varsa döngü yerine bu kullanılır.
+   */
+  schedule?: string[];
+  /** Tüm hareketler için tempo notu, örn. "3-1-0-1". */
+  tempo?: string;
 };
 
 export type SetLog = {
@@ -49,6 +64,8 @@ export type SessionExercise = {
   exerciseId: string;
   repMin: number;
   repMax: number;
+  /** Plandan kopyalanan set bazlı aralıklar (bkz. PlannedExercise.ranges). */
+  ranges?: [number, number][];
   sets: SetLog[];
 };
 
@@ -123,7 +140,14 @@ export type Settings = {
   isolationIncrement: number;
   proteinFloor: number;
   autoAdjustEnabled: boolean;
+  reminders: Reminders;
 };
+
+export type ReminderKey = 'weigh' | 'workout' | 'checkin' | 'measure' | 'gainer';
+
+export type ReminderSetting = { enabled: boolean; time: string /* "HH:MM" */ };
+
+export type Reminders = Record<ReminderKey, ReminderSetting>;
 
 export type Sex = 'erkek' | 'kadin';
 export type ActivityKey = 'sedanter' | 'hafif' | 'orta' | 'cok';

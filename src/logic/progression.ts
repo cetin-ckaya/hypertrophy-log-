@@ -1,8 +1,11 @@
-import { exerciseById } from '../data/program';
+import { exerciseById, setRange } from '../data/program';
 import { SessionExercise, SetLog, Settings, WorkoutSession } from '../types';
 import { fromKey, toKey } from './date';
 
 export const isLogged = (s: SetLog) => s.reps > 0;
+/** 0 kg / 0 tekrar girilen set "atlandı" sayılır; ilerleme hesaplarına girmez. */
+export const isSkipped = (s: SetLog) => s.weight === 0 && s.reps === 0;
+export const skippedCount = (e: SessionExercise) => e.sets.filter(isSkipped).length;
 export const loggedSets = (e: SessionExercise) => e.sets.filter(isLogged);
 
 /** Epley: 1RM = ağırlık × (1 + tekrar / 30) */
@@ -36,6 +39,13 @@ export const formatSets = (sets: SetLog[]): string =>
     .filter(isLogged)
     .map((s) => `${trimNum(s.weight)} kg × ${s.reps}`)
     .join(', ');
+
+/** Kısa biçim: "12,5×9 · 7,5×12" (atlanan setler "atlandı"). */
+export const formatSetsShort = (sets: SetLog[]): string =>
+  sets
+    .filter((s) => isLogged(s) || isSkipped(s))
+    .map((s) => (isSkipped(s) ? 'atlandı' : `${trimNum(s.weight)}×${s.reps}`))
+    .join(' · ');
 
 export const trimNum = (n: number): string =>
   (Number.isInteger(n) ? String(n) : String(Number(n.toFixed(2)))).replace('.', ',');
@@ -143,7 +153,18 @@ export const buildSuggestion = (
     didOverload(history[0].exercise, history[1].exercise) === null &&
     didOverload(history[1].exercise, history[2].exercise) === null;
 
-  const hitTop = sets.length > 0 && sets.every((s) => s.reps >= repMax);
+  // Set bazlı aralık varsa (ör. 5-9 / 8-12) her set kendi üst sınırına göre değerlendirilir.
+  const ranged = Boolean(last.exercise.ranges && last.exercise.ranges.length > 1);
+  const hitTop =
+    sets.length > 0 &&
+    last.exercise.sets.every(
+      (s, i) => !isLogged(s) || s.reps >= setRange({ ...last.exercise, repMax }, i)[1]
+    );
+  const topText = ranged
+    ? `Tüm setlerde aralığın üst sınırına ulaştın (${last.exercise
+        .ranges!.map((x) => x[1])
+        .join(' / ')}) → ağırlığı artır.`
+    : `Tüm setlerde ${repMax} tekrara ulaştın → ağırlığı artır.`;
 
   if (hitTop) {
     // Ne kadar artıracağına kullanıcı karar verir; uyarı miktar söylemez.
@@ -151,7 +172,7 @@ export const buildSuggestion = (
       kind: 'increase',
       targetWeight: weight,
       progressed: overload !== null,
-      text: `Tüm setlerde ${repMax} tekrara ulaştın → ağırlığı artır.`,
+      text: topText,
     };
   }
 
@@ -292,3 +313,23 @@ export const sessionVolume = (session: WorkoutSession): number =>
 
 export const sessionSetCount = (session: WorkoutSession): number =>
   session.exercises.reduce((sum, ex) => sum + loggedSets(ex).length, 0);
+
+/**
+ * Limbs B Preacher Curl: en son Limbs B seansında 1. set eşiği
+ * (12,5 kg × 9) yakalandıysa o seansın bilgisini döndürür.
+ */
+export const preacherThresholdHit = (
+  sessions: WorkoutSession[],
+  threshold: { dayId: string; exerciseId: string; weight: number; reps: number }
+): { date: string; weight: number; reps: number } | null => {
+  const history = exerciseHistory(sessions, threshold.exerciseId, threshold.dayId).filter(
+    (h) => h.session.dayId === threshold.dayId
+  );
+  const last = history[0];
+  if (!last) return null;
+  const first = last.exercise.sets[0];
+  if (!first || !isLogged(first)) return null;
+  return first.weight >= threshold.weight && first.reps >= threshold.reps
+    ? { date: last.session.date, weight: first.weight, reps: first.reps }
+    : null;
+};

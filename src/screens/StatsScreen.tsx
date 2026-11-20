@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AdjustmentCard } from '../components/AdjustmentCard';
+import { ArmMeasurements } from '../components/ArmMeasurements';
+import { WeeklyCheckin } from '../components/WeeklyCheckin';
 import { BarChart, LineChart } from '../components/charts';
 import {
   Button,
@@ -81,7 +83,9 @@ export const StatsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
     <Screen kicker="İstatistik" title={`${completed.length} antrenman · ${entries.length} ölçüm`}>
       {state.pendingAdjustment ? <AdjustmentCard /> : null}
 
-      <Section strong={false} style={{ borderTopWidth: 0 }}>
+      <WeeklyCheckin />
+
+      <Section>
         <Row style={{ justifyContent: 'space-between', alignItems: 'baseline' }} gap={spacing.md}>
           <Text style={font.h3}>Kilo · günlük ve 7 günlük ortalama</Text>
         </Row>
@@ -141,13 +145,15 @@ export const StatsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
                 <DataRow
                   key={e.date}
                   label={formatRelative(e.date)}
-                  value={`${e.weight.toFixed(1).replace('.', ',')} kg`}
+                  value={`${String(Number(e.weight.toFixed(2))).replace('.', ',')} kg`}
                   strong
                 />
               ))}
           </View>
         ) : null}
       </Section>
+
+      <ArmMeasurements />
 
       <Section>
         <Text style={font.h3}>Haftalık hacim · kas grubu</Text>

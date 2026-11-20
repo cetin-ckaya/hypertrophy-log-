@@ -1,0 +1,71 @@
+# Telefona hatırlatıcı bildirimi gönderir (Web Push).
+# Kurulum: uygulamada Ayarlar → "Telefona bildirim" bölümündeki kodu deponun
+# Settings → Secrets and variables → Actions → PUSH_CONFIG gizli değişkenine yapıştır.
+# Gizli değişken yoksa iş hiçbir şey yapmadan biter.
+name: Hatırlatıcı bildirimleri
+
+on:
+  schedule:
+    # 15 dakikada bir; GitHub zamanlanmış işleri 5–20 dk gecikebilir.
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      test:
+        description: 'Deneme bildirimi gönder'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reminders
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      HAS_CONFIG: ${{ secrets.PUSH_CONFIG != '' }}
+    steps:
+      - name: Kurulum kontrolü
+        if: env.HAS_CONFIG != 'true'
+        run: echo 'PUSH_CONFIG tanımlı değil, bildirim kurulmamış; atlanıyor.'
+      - uses: actions/checkout@v4
+        if: env.HAS_CONFIG == 'true'
+        with:
+          sparse-checkout: scripts
+      - uses: actions/setup-node@v4
+        if: env.HAS_CONFIG == 'true'
+        with:
+          node-version: 22
+      - name: web-push kur
+        if: env.HAS_CONFIG == 'true'
+        run: |
+          mkdir -p "$RUNNER_TEMP/webpush"
+          cd "$RUNNER_TEMP/webpush"
+          npm init -y > /dev/null
+          npm install --no-audit --no-fund web-push@3.6.7
+      - name: Gönderilenleri geri yükle
+        if: env.HAS_CONFIG == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: .reminders-state
+          key: reminders-${{ github.run_id }}
+          restore-keys: reminders-
+      - name: Hatırlatıcıları gönder
+        id: send
+        if: env.HAS_CONFIG == 'true'
+        env:
+          PUSH_CONFIG: ${{ secrets.PUSH_CONFIG }}
+          WEBPUSH_DIR: ${{ runner.temp }}/webpush
+          STATE_DIR: .reminders-state
+          TEST: ${{ github.event_name == 'workflow_dispatch' && inputs.test && '1' || '' }}
+        run: node scripts/send-reminders.mjs
+      - name: Gönderilenleri kaydet
+        if: always() && steps.send.outputs.changed == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .reminders-state
+          key: reminders-${{ github.run_id }}
