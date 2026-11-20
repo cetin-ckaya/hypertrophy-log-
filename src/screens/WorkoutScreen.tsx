@@ -15,14 +15,32 @@ import {
   Segmented,
   Tag,
 } from '../components/ui';
-import { GROUP_NAMES, cycleDayOf, dayById, exerciseById, getProgram } from '../data/program';
-import { formatRelative, formatShort } from '../logic/date';
+import {
+  GROUP_NAMES,
+  PREACHER_THRESHOLD,
+  WEEKDAY_NAMES,
+  dayById,
+  dayForDate,
+  exerciseById,
+  exerciseNote,
+  extraSetKey,
+  getProgram,
+  nextScheduledWorkout,
+  plannedSetCount,
+  programOfDay,
+  rangeLabel,
+  setRange,
+} from '../data/program';
+import { formatRelative, formatShort, todayKey } from '../logic/date';
 import {
   buildSuggestion,
   formatSets,
+  formatSetsShort,
   increment,
+  isSkipped,
   lastPerformance,
   loggedSets,
+  preacherThresholdHit,
   personalRecords,
   sessionSetCount,
   sessionVolume,
@@ -58,8 +76,16 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
     unlockAlert();
     state.startRest();
   };
-  const nextDay = cycleDayOf(state.programId, state.cycleIndex);
+  const today = todayKey();
+  const nextDay = dayForDate(state.programId, state.cycleIndex, today);
   const day = active ? dayById(active.dayId) : nextDay;
+  const scheduled = Boolean(program.schedule);
+  const upcoming = scheduled && nextDay.kind !== 'workout' ? nextScheduledWorkout(state.programId, today) : null;
+  const activeProgram = active ? programOfDay(active.dayId) : program;
+  // Preacher 3. set eşiği: son Limbs B seansında yakalandıysa ve set henüz eklenmediyse.
+  const preacherKey = extraSetKey(PREACHER_THRESHOLD.dayId, PREACHER_THRESHOLD.exerciseId);
+  const preacherHit =
+    (state.extraSets?.[preacherKey] ?? 0) > 0 ? null : preacherThresholdHit(state.sessions, PREACHER_THRESHOLD);
   const prs = personalRecords(state.sessions);
 
   const subTabs = (
@@ -141,10 +167,15 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
                           {exIndex + 1}. {meta?.name ?? ex.exerciseId}
                         </Text>
                       </View>
-                      <Tag
-                        label={`${ex.sets.length}×${ex.repMin === ex.repMax ? ex.repMin : `${ex.repMin}-${ex.repMax}`}`}
-                      />
+                      <Tag label={`${ex.sets.length}×${rangeLabel(ex)}`} />
                     </Row>
+                    {(() => {
+                      const note = exerciseNote(
+                        activeProgram?.tempo,
+                        day?.exercises.find((p) => p.exerciseId === ex.exerciseId)
+                      );
+                      return note ? <Text style={[font.tiny, { marginTop: 4 }]}>{note}</Text> : null;
+                    })()}
                   </Pressable>
 
                   <View style={styles.noteRow}>
@@ -152,7 +183,7 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
                       <Text style={font.small}>
                         Geçen sefer:{' '}
                         <Text style={[font.bodyStrong, font.num, { fontSize: 13 }]}>
-                          {previous ? formatSets(previous.exercise.sets) : 'kayıt yok'}
+                          {previous ? formatSetsShort(previous.exercise.sets) : 'kayıt yok'}
                         </Text>
                       </Text>
                     </View>
@@ -161,13 +192,48 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
                         <Text style={styles.tipText}>{suggestion.text}</Text>
                       </View>
                     ) : null}
+                    {(() => {
+                      // Bu seansta Preacher 1. set eşiği yakalandıysa hemen hatırlat.
+                      if (
+                        active.dayId !== PREACHER_THRESHOLD.dayId ||
+                        ex.exerciseId !== PREACHER_THRESHOLD.exerciseId ||
+                        (state.extraSets?.[preacherKey] ?? 0) > 0
+                      )
+                        return null;
+                      const first = ex.sets[0];
+                      const liveHit =
+                        first && first.weight >= PREACHER_THRESHOLD.weight && first.reps >= PREACHER_THRESHOLD.reps;
+                      if (!liveHit && !preacherHit) return null;
+                      return (
+                        <View style={styles.tip}>
+                          <Text style={styles.tipText}>
+                            1. sette 12,5 kg × 9 eşiği geçildi → 3. set eklenecek.
+                          </Text>
+                          <Pressable
+                            style={[styles.mini, { marginTop: 6, borderColor: colors.accent }]}
+                            onPress={() => {
+                              state.addExtraSet(PREACHER_THRESHOLD.dayId, PREACHER_THRESHOLD.exerciseId);
+                              if (ex.sets.length < 3) state.addSet(exIndex);
+                            }}
+                          >
+                            <Text style={[styles.miniText, { color: colors.accentDeep }]}>3. seti kalıcı ekle</Text>
+                          </Pressable>
+                        </View>
+                      );
+                    })()}
                   </View>
 
                   {!open ? null : (
                     <View style={{ marginTop: spacing.md, gap: 6 }}>
                       {ex.sets.map((set, setIndex) => (
-                        <Row key={setIndex} gap={6}>
-                          <Text style={styles.setNo}>S{setIndex + 1}</Text>
+                        <View key={setIndex}>
+                        <Row gap={6}>
+                          <View style={styles.setNoWrap}>
+                            <Text style={styles.setNo}>S{setIndex + 1}</Text>
+                            {ex.ranges ? (
+                              <Text style={styles.setRange}>{setRange(ex, setIndex).join('-')}</Text>
+                            ) : null}
+                          </View>
                           <View style={{ flex: 1 }}>
                             <NumberStepper
                               value={set.weight}
@@ -201,6 +267,10 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
                             <CheckIcon size={19} color={set.done ? colors.onAccent : colors.ruleLight} />
                           </Pressable>
                         </Row>
+                        {set.done && isSkipped(set) ? (
+                          <Text style={styles.skipped}>Atlandı · ilerleme hesabına katılmaz</Text>
+                        ) : null}
+                        </View>
                       ))}
 
                       <Row gap={6} style={{ marginTop: 4 }}>
@@ -252,22 +322,50 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
         ) : (
           <>
             <Section strong={false} style={{ borderTopWidth: 0 }}>
-              <Label>Sıradaki gün</Label>
+              <Label>{scheduled ? `Bugün · ${WEEKDAY_NAMES[new Date().getDay()]}` : 'Sıradaki gün'}</Label>
               <Text style={styles.bigDay}>{nextDay.name}</Text>
               {nextDay.kind === 'workout' ? (
                 <Button title="Antrenmana başla →" size="lg" onPress={() => state.startWorkout()} />
               ) : (
                 <>
                   <Text style={font.small}>
-                    Bugün dinlenme günü. Yine de çalışacaksan aşağıdan bir gün seç.
+                    Bugün dinlenme günü
+                    {upcoming
+                      ? ` · sıradaki ${upcoming.day.name} (${upcoming.inDays === 1 ? 'yarın' : WEEKDAY_NAMES[upcoming.weekday]})`
+                      : ''}
+                    . Bir antrenmanı kaçırdıysan aşağıdan o günü seç.
                   </Text>
-                  <Button title="Dinlenmeyi tamamla →" variant="ghost" onPress={state.advanceCycle} />
+                  {scheduled ? null : (
+                    <Button title="Dinlenmeyi tamamla →" variant="ghost" onPress={state.advanceCycle} />
+                  )}
                 </>
               )}
             </Section>
+            {preacherHit ? (
+              <Section>
+                <View style={styles.tip}>
+                  <Text style={styles.tipText}>
+                    Preacher Curl (Limbs B): {formatShort(preacherHit.date)} günü 1. sette {trimNum(preacherHit.weight)} kg ×{' '}
+                    {preacherHit.reps} yaptın — 12,5 kg × 9 eşiği geçildi, 3. set eklenecek.
+                  </Text>
+                  <Pressable
+                    style={[styles.mini, { marginTop: 6, borderColor: colors.accent }]}
+                    onPress={() => state.addExtraSet(PREACHER_THRESHOLD.dayId, PREACHER_THRESHOLD.exerciseId)}
+                  >
+                    <Text style={[styles.miniText, { color: colors.accentDeep }]}>3. seti kalıcı ekle</Text>
+                  </Pressable>
+                </View>
+              </Section>
+            ) : null}
             {nextDay.kind === 'workout' ? (
               <Section>
                 <Label>Bugünün hareketleri · geçen sefer</Label>
+                {program.tempo ? (
+                  <Text style={[font.tiny, { marginTop: 2 }]}>
+                    Tempo {program.tempo}: 3 sn indir, 1 sn gerilmiş pozisyonda bekle, kaldır. "5-9 / 8-12": 1. set ağır,
+                    sonraki set(ler) ~%15-20 hafif.
+                  </Text>
+                ) : null}
                 {nextDay.exercises.map((ex, i) => {
                   const meta = exerciseById(ex.exerciseId);
                   const previous = lastPerformance(state.sessions, ex.exerciseId, nextDay.id);
@@ -291,12 +389,13 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
                           {i + 1}. {meta?.name ?? ex.exerciseId}
                         </Text>
                         <Text style={[font.labelSm, font.num]}>
-                          {ex.sets}×{ex.repMin === ex.repMax ? ex.repMin : `${ex.repMin}-${ex.repMax}`}
+                          {plannedSetCount(nextDay.id, ex)}×{rangeLabel(ex)}
+                          {ex.rir ? ` · RIR ${ex.rir}` : ''}
                         </Text>
                       </Row>
                       <Row gap={spacing.sm} style={{ marginTop: 2, flexWrap: 'wrap' }}>
                         <Text style={[font.small, font.num, { color: colors.muted }]}>
-                          {previous ? formatSets(previous.exercise.sets) : 'Kayıt yok'}
+                          {previous ? formatSetsShort(previous.exercise.sets) : 'Kayıt yok'}
                         </Text>
                         {flag ? <Text style={styles.previewFlag}>{flag}</Text> : null}
                       </Row>
@@ -426,7 +525,10 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: colors.accent,
   },
-  setNo: { width: 26, fontFamily: fonts.bold, fontSize: 12, color: colors.muted },
+  setNoWrap: { width: 32 },
+  setNo: { fontFamily: fonts.bold, fontSize: 12, color: colors.muted },
+  setRange: { fontFamily: fonts.medium, fontSize: 10, color: colors.muted, fontVariant: ['tabular-nums'] },
+  skipped: { fontFamily: fonts.bold, fontSize: 11, color: colors.accent, marginTop: 2, marginLeft: 38 },
   check: {
     width: 46,
     height: 46,

@@ -57,3 +57,37 @@ self.addEventListener('fetch', (event) => {
     )
   );
 });
+
+// ---------- Bildirimler (Web Push) ----------
+// Gönderen: .github/workflows/reminders.yml (zamanlanmış GitHub Actions işi).
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    data = { body: event.data ? event.data.text() : '' };
+  }
+  const title = data.title || 'Hipertrofi';
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || '',
+      tag: data.tag || 'hatirlatici',
+      icon: new URL('icons/icon-192.png', self.registration.scope).href,
+      badge: new URL('icons/icon-192.png', self.registration.scope).href,
+      data: { url: self.registration.scope },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || self.registration.scope;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if (c.url.startsWith(url) && 'focus' in c) return c.focus();
+      }
+      return self.clients.openWindow(url);
+    })
+  );
+});

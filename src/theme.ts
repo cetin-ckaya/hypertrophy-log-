@@ -109,6 +109,7 @@ export const CHART_GROUP_ORDER = [
   'triceps',
   'kalca',
   'onkol',
+  'karin',
 ];
 
 /** Mono sistemde kas grupları renkle değil, etiketle ayrışır. */

@@ -80,6 +80,40 @@ npm run build:web  # PWA çıktısı -> dist/
 - Setler arası **dinlenme sayacı** (varsayılan 120 sn, ±30 sn ayarlanabilir, bitince titreşim).
 - Yeni antrenman açıldığında setler önerilen ağırlıkla önden doldurulur.
 
+### Torso / Limbs programı (varsayılan)
+- Haftanın sabit günlerine bağlı: **Pzt Torso A · Sal Limbs A · Per Torso B · Cum Limbs B**,
+  diğer günler dinlenme. "Bugün" ekranı günü takvimden gösterir; kaçırılan bir gün
+  "Kaçırdığın günü çalış" / "Başka bir gün çalış" ile elle seçilir.
+- Her hareketin altında tempo (3-1-0-1), RIR hedefi ve ağır/hafif set notu görünür.
+  "5-9 / 8-12" hareketlerde 1. set 5-9, sonraki setler 8-12 tekrar aralığıyla
+  değerlendirilir; "ağırlığı artır" önerisi her setin kendi üst sınırına bakar.
+- 0 kg / 0 tekrar girilen set **atlandı** sayılır, ilerleme hesaplarına katılmaz.
+- Limbs B Preacher Curl'de 1. set **12,5 kg × 9** eşiği geçilince uyarı çıkar;
+  "3. seti kalıcı ekle" ile plana eklenir.
+- Eski programlar (Push/Pull/Legs, kalça) Ayarlar'da seçilebilir durumda kalır.
+
+### Hatırlatıcılar ve telefona bildirim
+- Sabah tartı (09:00), antrenman günü (15:00), gainer (12:00), Cuma check-in (20:00),
+  ayın son Cuması kol ölçümü (09:00). Saatler ve açma/kapama Ayarlar → Hatırlatıcılar'da.
+- Vakti gelen hatırlatıcılar "Bugün" ekranının üstünde kart olarak çıkar. Tartı ve gainer
+  kartları o gün kilo girildiyse / gainer "yedim" işaretlendiyse çıkmaz.
+- **Telefona bildirim:** `.github/workflows/reminders.yml` 15 dakikada bir çalışır ve
+  vakti gelen hatırlatıcıyı Web Push ile gönderir (5–20 dk gecikebilir). Kurulum:
+  1. Uygulamayı ana ekrana ekle ve oradan aç (iOS 16.4+).
+  2. Ayarlar → Telefona bildirim → "Bildirim izni ver ve kodu oluştur" → "Kodu kopyala".
+  3. GitHub → Settings → Secrets and variables → Actions → New repository secret →
+     Name: `PUSH_CONFIG`, Secret: kopyalanan kod.
+  4. Actions → "Hatırlatıcı bildirimleri" → Run workflow → deneme bildirimi gelir.
+  Saatleri değiştirince kodu yeniden oluşturup `PUSH_CONFIG`'i güncelle. Sunucu
+  telefondaki veriyi göremediği için bildirimlerde "kilo/gainer girildiyse gönderme"
+  koşulu uygulanmaz (yalnızca kartlarda uygulanır).
+
+### Haftalık check-in ve kol ölçüsü
+- İstatistik → "Haftalık özeti kopyala": Pazartesi–Cuma haftasının kilo, antrenman
+  (geçen haftayla, 1. setin Epley 1RM'ine göre %1 eşikli ↑ / = / ↓), uyarı ve kol
+  ölçüsü özetini düz metin olarak panoya kopyalar. Önceki haftalar da seçilebilir.
+- Kol ölçüsü: tarih + cm girişi ve grafik (başlangıç: 18 Eki 2026 – 36,2 cm).
+
 ### Beslenme
 - Günde 3 ana öğün + 1 ara öğün, gramajları ile listelenir; öğünü yediğinde işaretlersin.
 - Günlük kalori ve makrolar üstte canlı, hedefe göre yüzde barıyla.

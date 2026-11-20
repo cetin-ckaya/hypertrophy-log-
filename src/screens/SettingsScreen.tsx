@@ -19,6 +19,7 @@ import {
 } from '../components/ui';
 import { ChevronLeftIcon } from '../components/icons';
 import { ProgramEditorScreen } from './ProgramEditorScreen';
+import { ReminderSettings } from '../components/ReminderSettings';
 import { allPrograms, isCustomProgram } from '../data/program';
 import { todayKey } from '../logic/date';
 import { ACTIVITIES, GOALS, SEXES, activityOf, computeTargets, goalOf } from '../logic/energy';
@@ -219,6 +220,8 @@ export const SettingsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
           suffix="kg"
         />
       </Card>
+
+      <ReminderSettings />
 
       <SectionTitle>Beslenme</SectionTitle>
       <Card>

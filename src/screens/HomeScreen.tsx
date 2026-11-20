@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AdjustmentCard } from '../components/AdjustmentCard';
+import { ReminderCards } from '../components/ReminderCards';
 import { GearIcon } from '../components/icons';
 import {
   Button,
@@ -18,7 +19,15 @@ import {
   Segmented,
   Sparkline,
 } from '../components/ui';
-import { cycleDayOf, dayById, getProgram } from '../data/program';
+import {
+  WEEKDAY_NAMES,
+  WEEKDAY_SHORT,
+  dayById,
+  dayForDate,
+  getProgram,
+  nextScheduledWorkout,
+  plannedSetCount,
+} from '../data/program';
 import { formatLong, formatRelative, todayKey } from '../logic/date';
 import { eatenMacros } from '../logic/nutrition';
 import { sessionSetCount, sessionVolume } from '../logic/progression';
@@ -34,7 +43,10 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
   const state = useStore();
   const today = todayKey();
   const program = getProgram(state.programId);
-  const day = cycleDayOf(state.programId, state.cycleIndex);
+  const day = dayForDate(state.programId, state.cycleIndex, today);
+  const scheduled = Boolean(program.schedule);
+  const weekday = new Date().getDay();
+  const upcoming = scheduled && day.kind !== 'workout' ? nextScheduledWorkout(state.programId, today) : null;
   const [view, setView] = useState<'cards' | 'cockpit'>('cards');
   const [weightDraft, setWeightDraft] = useState<number>(
     state.weights[today] ?? latestAverage(state.weights) ?? state.profile.startWeightKg
@@ -60,8 +72,27 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
 
   const summary =
     day.kind === 'workout'
-      ? `${day.exercises.length} hareket · ${day.exercises.reduce((s, e) => s + e.sets, 0)} work-set`
-      : 'Toparlanma günü';
+      ? `${day.exercises.length} hareket · ${day.exercises.reduce((s, e) => s + plannedSetCount(day.id, e), 0)} work-set`
+      : upcoming
+        ? `Toparlanma günü · sıradaki ${upcoming.day.name} (${upcoming.inDays === 1 ? 'yarın' : WEEKDAY_NAMES[upcoming.weekday]})`
+        : 'Toparlanma günü';
+  const dayLabel = scheduled ? `Bugün · ${WEEKDAY_NAMES[weekday]}` : 'Sıradaki antrenman';
+  // Haftalık program: Pzt'den başlayan hafta görünümü, bugün köşeli parantezde.
+  const weekLine = scheduled
+    ? [1, 2, 3, 4, 5, 6, 0]
+        .map((wd) => {
+          const d = program.days[program.schedule![wd]];
+          const name = d && d.kind === 'workout' ? d.name : '—';
+          const label = `${WEEKDAY_SHORT[wd]} ${name}`;
+          return wd === weekday ? `[${label}]` : label;
+        })
+        .join(' · ')
+    : null;
+  const restAction = scheduled ? (
+    <Button title="Başka bir gün çalış →" variant="ghost" size="lg" onPress={() => go('workout')} />
+  ) : (
+    <Button title="Dinlenmeyi tamamla →" size="lg" onPress={state.advanceCycle} />
+  );
 
   const macros = (
     <>
@@ -94,6 +125,8 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
 
       {state.pendingAdjustment ? <AdjustmentCard /> : null}
 
+      <ReminderCards go={go} />
+
       {state.activeSession ? (
         <Card tone="accent">
           <Label>Devam eden antrenman</Label>
@@ -105,13 +138,15 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
       {view === 'cockpit' ? (
         <View style={styles.cockpit}>
           <View style={styles.cockpitHead}>
-            <Text style={[font.label, { color: 'rgba(255,255,255,0.9)' }]}>Sıradaki antrenman</Text>
+            <Text style={[font.label, { color: 'rgba(255,255,255,0.9)' }]}>{dayLabel}</Text>
             <Text style={styles.cockpitDay}>{day.name}</Text>
             <Text style={styles.cockpitSummary}>{summary}</Text>
           </View>
           <Grid style={{ borderWidth: 0, borderTopWidth: rules.strong }}>
             {[
-              { label: 'Döngü', value: `${state.cycleIndex + 1}/${program.cycle.length}`, note: program.name.split(' · ')[0] },
+              scheduled
+                ? { label: 'Gün', value: WEEKDAY_SHORT[weekday], note: program.name.split(' · ')[0] }
+                : { label: 'Döngü', value: `${state.cycleIndex + 1}/${program.cycle.length}`, note: program.name.split(' · ')[0] },
               { label: 'Kalori', value: `${Math.round(eaten.kcal)}`, note: `/ ${state.calorieTarget} kcal` },
               { label: '7 gün ort.', value: avg === null ? '—' : avg.toFixed(1).replace('.', ','), note: 'kg' },
               {
@@ -139,7 +174,7 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
                 }}
               />
             ) : (
-              <Button title="Dinlenmeyi tamamla →" size="lg" onPress={state.advanceCycle} />
+              restAction
             )}
             <Button title="Öğünleri işaretle" variant="ghost" size="lg" onPress={() => go('nutrition')} style={{ borderWidth: 0, borderTopWidth: rules.strong }} />
           </View>
@@ -147,15 +182,15 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
       ) : (
         <>
           <Section strong={false} style={{ borderTopWidth: 0 }}>
-            <Label>Sıradaki antrenman</Label>
+            <Label>{dayLabel}</Label>
             <Text style={styles.bigDay}>{day.name}</Text>
             <Text style={font.small}>{summary}</Text>
             <View style={styles.cycleLine}>
               <Text style={font.tiny}>
-                Döngü{' '}
-                {program.cycle
-                  .map((id, i) => (i === state.cycleIndex ? `[${program.days[id].name}]` : program.days[id].name))
-                  .join(' → ')}
+                {weekLine ??
+                  `Döngü ${program.cycle
+                    .map((id, i) => (i === state.cycleIndex ? `[${program.days[id].name}]` : program.days[id].name))
+                    .join(' → ')}`}
               </Text>
             </View>
             {day.kind === 'workout' ? (
@@ -168,7 +203,7 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
                 }}
               />
             ) : (
-              <Button title="Dinlenmeyi tamamla →" size="lg" onPress={state.advanceCycle} />
+              restAction
             )}
           </Section>
 
@@ -245,10 +280,24 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
           ) : null}
 
           <Section>
-            <Label>Günü manuel seç</Label>
+            <Label>{scheduled ? 'Kaçırdığın günü çalış' : 'Günü manuel seç'}</Label>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <Row gap={spacing.sm}>
-                {program.cycle.map((id, i) => (
+                {scheduled
+                  ? program.cycle
+                      .filter((id, i) => program.days[id]?.kind === 'workout' && program.cycle.indexOf(id) === i)
+                      .map((id) => (
+                        <Chip
+                          key={id}
+                          label={program.days[id].name}
+                          active={day.id === id}
+                          onPress={() => {
+                            if (!state.activeSession) state.startWorkout(id);
+                            go('workout');
+                          }}
+                        />
+                      ))
+                  : program.cycle.map((id, i) => (
                   <Chip
                     key={`${id}-${i}`}
                     label={`${i + 1}. ${program.days[id].name}`}
