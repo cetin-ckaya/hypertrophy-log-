@@ -70,6 +70,7 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
   const active = state.activeSession;
   const [sub, setSub] = useState<Sub>('session');
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+  const [openSession, setOpenSession] = useState<string | null>(null);
 
   const startRest = () => {
     // Dokunuş anında ses kilidini aç; sayaç bitince bip çalabilsin (iOS).
@@ -433,20 +434,39 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
             .slice()
             .reverse()
             .map((s) => (
-              <View key={s.id} style={styles.historyRow}>
-                <Text style={[font.labelSm, { width: 74 }]}>{formatShort(s.date)}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={font.h3}>{dayById(s.dayId)?.name ?? s.dayId}</Text>
-                  <Text style={[font.tiny, font.num]}>
-                    {sessionSetCount(s)} set · {formatRelative(s.date)}
-                  </Text>
-                </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={[font.h3, font.num]}>
-                    {Math.round(sessionVolume(s)).toLocaleString('tr-TR')}
-                  </Text>
-                  <Text style={font.labelSm}>kg hacim</Text>
-                </View>
+              <View key={s.id}>
+                <Pressable
+                  style={styles.historyRow}
+                  onPress={() => setOpenSession((cur) => (cur === s.id ? null : s.id))}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${dayById(s.dayId)?.name ?? s.dayId} detayı`}
+                >
+                  <Text style={[font.labelSm, { width: 74 }]}>{formatShort(s.date)}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={font.h3}>{dayById(s.dayId)?.name ?? s.dayId}</Text>
+                    <Text style={[font.tiny, font.num]}>
+                      {sessionSetCount(s)} set · {formatRelative(s.date)} · {openSession === s.id ? 'kapat ▴' : 'detay ▾'}
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={[font.h3, font.num]}>
+                      {Math.round(sessionVolume(s)).toLocaleString('tr-TR')}
+                    </Text>
+                    <Text style={font.labelSm}>kg hacim</Text>
+                  </View>
+                </Pressable>
+                {openSession === s.id ? (
+                  <View style={styles.historyDetail}>
+                    {s.exercises.map((ex, i) => (
+                      <Row key={`${ex.exerciseId}-${i}`} style={{ alignItems: 'flex-start' }} gap={spacing.sm}>
+                        <Text style={[font.small, { flex: 1 }]}>{exerciseById(ex.exerciseId)?.name ?? ex.exerciseId}</Text>
+                        <Text style={[font.small, font.num, { color: colors.ink, textAlign: 'right', flexShrink: 1 }]}>
+                          {formatSetsShort(ex.sets) || 'kayıt yok'}
+                        </Text>
+                      </Row>
+                    ))}
+                  </View>
+                ) : null}
               </View>
             ))
         )
@@ -553,6 +573,13 @@ const styles = StyleSheet.create({
     letterSpacing: 1.1,
     textTransform: 'uppercase',
     color: colors.ink,
+  },
+  historyDetail: {
+    gap: 6,
+    paddingVertical: spacing.sm,
+    paddingLeft: 74 + spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.ruleLight,
   },
   historyRow: {
     flexDirection: 'row',
