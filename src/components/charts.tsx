@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
 import { colors, font, fonts, rules, spacing } from '../theme';
 
@@ -136,6 +136,35 @@ export const LineChart = ({
                 fill="none"
               />
             ))}
+
+            {/* Noktalar: tek başına duran değerler (çizgiye bağlanamayan) her zaman,
+                az veri varsa (≤ 12) tüm değerler işaretlenir. */}
+            {data.map((s) =>
+              s.values.map((v, i) => {
+                if (v === null || v === undefined) return null;
+                const isolated =
+                  (i === 0 || s.values[i - 1] === null || s.values[i - 1] === undefined) &&
+                  (i === s.values.length - 1 || s.values[i + 1] === null || s.values[i + 1] === undefined);
+                if (!isolated && labels.length > 12) return null;
+                return <Circle key={`${s.name}-${i}`} cx={x(i)} cy={y(v)} r={isolated ? 4 : 3} fill={s.color} />;
+              })
+            )}
+
+            {idx !== null
+              ? data.map((s) =>
+                  s.values[idx] === null || s.values[idx] === undefined ? null : (
+                    <Circle
+                      key={`sel-${s.name}`}
+                      cx={x(idx)}
+                      cy={y(s.values[idx] as number)}
+                      r={5}
+                      fill={s.color}
+                      stroke={colors.bg}
+                      strokeWidth={2}
+                    />
+                  )
+                )
+              : null}
 
             {idx !== null ? (
               <Line
