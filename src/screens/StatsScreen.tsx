@@ -20,7 +20,7 @@ import { GROUP_NAMES } from '../data/program';
 import { formatRelative, formatShort, todayKey } from '../logic/date';
 import { eatenMacros } from '../logic/nutrition';
 import { sessionVolume, weekStart, weeklyVolume } from '../logic/progression';
-import { latestAverage, sortedWeights, weeklyTrend, weightSeries } from '../logic/weight';
+import { formatKg, latestAverage, sortedWeights, weeklyTrend, weightSeries } from '../logic/weight';
 import { useStore } from '../store/store';
 import { CHART_GROUP_ORDER, chartGroup, colors, font, fonts, rules, spacing } from '../theme';
 import { TabKey } from '../navigation';
@@ -91,13 +91,13 @@ export const StatsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
         </Row>
         <Text style={[font.small, font.num]}>
           {state.profile.startWeightKg.toFixed(1).replace('.', ',')} →{' '}
-          {entries.length ? entries[entries.length - 1].weight.toFixed(1).replace('.', ',') : '—'} kg · ort.{' '}
+          {entries.length ? formatKg(entries[entries.length - 1].weight) : '—'} kg · ort.{' '}
           {avg === null ? '—' : avg.toFixed(1).replace('.', ',')} kg
         </Text>
         <LineChart
           labels={weights.map((w) => formatShort(w.date))}
           unit="kg"
-          decimals={1}
+          decimals={2}
           height={200}
           series={[
             { name: 'Günlük', color: colors.faintInk, values: weights.map((w) => w.weight) },
@@ -119,7 +119,7 @@ export const StatsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
               step={0.1}
               min={30}
               max={250}
-              decimals={1}
+              decimals={2}
               suffix="kg"
             />
           </View>
@@ -131,7 +131,7 @@ export const StatsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
         </Row>
         <Text style={font.small}>
           {weighedToday
-            ? `Bugün girildi · ${state.weights[today].toFixed(1).replace('.', ',')} kg`
+            ? `Bugün girildi · ${formatKg(state.weights[today])} kg`
             : 'Bugün girilmedi — aç karnına, tuvaletten sonra ölç.'}
           {trend.changeKg !== null ? ` · haftalık ${signed(trend.changeKg)} kg` : ''}
         </Text>
@@ -145,7 +145,7 @@ export const StatsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
                 <DataRow
                   key={e.date}
                   label={formatRelative(e.date)}
-                  value={`${String(Number(e.weight.toFixed(2))).replace('.', ',')} kg`}
+                  value={`${formatKg(e.weight)} kg`}
                   strong
                 />
               ))}

@@ -622,7 +622,7 @@ export const useStore = create<Store>()(
         set((s) => ({ dismissedReminders: { ...s.dismissedReminders, [key]: date } })),
 
       logWeight: (date, kg) =>
-        set((s) => ({ weights: { ...s.weights, [date]: Math.round(kg * 10) / 10 } })),
+        set((s) => ({ weights: { ...s.weights, [date]: Math.round(kg * 100) / 100 } })),
 
       removeWeight: (date) =>
         set((s) => {

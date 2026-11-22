@@ -31,7 +31,7 @@ import {
 import { formatLong, formatRelative, todayKey } from '../logic/date';
 import { eatenMacros } from '../logic/nutrition';
 import { sessionSetCount, sessionVolume } from '../logic/progression';
-import { latestAverage, sortedWeights, weeklyTrend } from '../logic/weight';
+import { formatKg, latestAverage, sortedWeights, weeklyTrend } from '../logic/weight';
 import { dayLogFor, useStore } from '../store/store';
 import { colors, font, fonts, macroColors, rules, spacing } from '../theme';
 import { TabKey } from '../navigation';
@@ -233,7 +233,7 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
                 </Row>
                 <Text style={font.small}>
                   {lastEntry
-                    ? `Son ölçüm ${lastEntry.weight.toFixed(1).replace('.', ',')} kg`
+                    ? `Son ölçüm ${formatKg(lastEntry.weight)} kg`
                     : 'Henüz ölçüm yok'}
                 </Text>
               </View>
@@ -242,7 +242,7 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
 
             {weighedToday ? (
               <Text style={font.bodyStrong}>
-                Bugünün kilosu girildi: {state.weights[today].toFixed(1).replace('.', ',')} kg
+                Bugünün kilosu girildi: {formatKg(state.weights[today])} kg
               </Text>
             ) : (
               <>
@@ -256,7 +256,7 @@ export const HomeScreen = ({ go }: { go: (tab: TabKey) => void }) => {
                       min={30}
                       max={250}
                       suffix="kg"
-                      decimals={1}
+                      decimals={2}
                     />
                   </View>
                   <Button title="Kaydet" variant="ink" onPress={() => state.logWeight(today, weightDraft)} />

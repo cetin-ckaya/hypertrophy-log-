@@ -5,6 +5,12 @@ export type WeightPoint = { date: string; weight: number; average: number | null
 const inRange = (key: string, from: string, to: string) =>
   daysBetween(from, key) >= 0 && daysBetween(key, to) >= 0;
 
+/** Tek bir tartı değerini gösterir: 78,85 → "78,85", 78,4 → "78,4", 78 → "78,0". */
+export const formatKg = (kg: number): string => {
+  const r = Math.round(kg * 100) / 100;
+  return (Number.isInteger(r * 10) ? r.toFixed(1) : r.toFixed(2)).replace('.', ',');
+};
+
 export const sortedWeights = (weights: Record<string, number>) =>
   Object.entries(weights)
     .filter(([, v]) => typeof v === 'number' && !Number.isNaN(v))
