@@ -138,7 +138,6 @@ export type Settings = {
   restSeconds: number;
   compoundIncrement: number;
   isolationIncrement: number;
-  proteinFloor: number;
   autoAdjustEnabled: boolean;
   reminders: Reminders;
 };

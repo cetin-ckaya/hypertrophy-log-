@@ -1,4 +1,4 @@
-import { CARB_SOURCE_ID, PROTEIN_SOURCE_ID } from '../data/foods';
+import { CARB_SOURCE_ID } from '../data/foods';
 import { DayMeal, Food, Macros, Meal, MealItem } from '../types';
 
 export const emptyMacros = (): Macros => ({ kcal: 0, protein: 0, carbs: 0, fat: 0 });
@@ -75,35 +75,6 @@ export const distributeCarbs = (meals: Meal[], grams: number): Meal[] => {
       : [...meal.items, { foodId: CARB_SOURCE_ID, amount: Math.max(0, per) }];
     return { ...meal, items };
   });
-};
-
-/** Protein tabanının altına düşülmüşse protein kaynağını artırarak dengeler. */
-export const enforceProteinFloor = (
-  meals: Meal[],
-  foods: Record<string, Food>,
-  floor: number
-): Meal[] => {
-  let current = meals;
-  let guard = 0;
-  while (planMacros(current, foods).protein < floor && guard < 80) {
-    const targets = current
-      .map((m, i) => (m.items.some((it) => it.foodId === PROTEIN_SOURCE_ID) ? i : -1))
-      .filter((i) => i >= 0);
-    if (targets.length === 0) break;
-    const bump = targets[guard % targets.length];
-    current = current.map((meal, index) =>
-      index === bump
-        ? {
-            ...meal,
-            items: meal.items.map((i) =>
-              i.foodId === PROTEIN_SOURCE_ID ? { ...i, amount: i.amount + 5 } : i
-            ),
-          }
-        : meal
-    );
-    guard += 1;
-  }
-  return current;
 };
 
 /**
