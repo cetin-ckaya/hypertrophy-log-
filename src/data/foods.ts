@@ -84,5 +84,3 @@ export const DEFAULT_PLAN: Meal[] = [
 ];
 
 export const CARB_SOURCE_ID = 'rice';
-/** Protein tabanının altına düşülürse artırılacak protein kaynağı. */
-export const PROTEIN_SOURCE_ID = 'chicken';

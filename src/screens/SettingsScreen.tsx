@@ -38,11 +38,7 @@ export const SettingsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
   const [editing, setEditing] = useState<{ id: string | null } | null>(null);
 
   const avgWeight = latestAverage(state.weights);
-  const targets = computeTargets(
-    state.profile,
-    avgWeight ?? state.profile.startWeightKg,
-    state.settings.proteinFloor
-  );
+  const targets = computeTargets(state.profile, avgWeight ?? state.profile.startWeightKg);
   const applied =
     state.calorieTarget === targets.kcal &&
     state.macroTargets.protein === targets.protein &&
@@ -238,20 +234,6 @@ export const SettingsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
             trackColor={{ true: colors.accent, false: colors.ruleLight }}
           />
         </Row>
-
-        <Text style={[font.small, { marginTop: spacing.sm }]}>Protein tabanı</Text>
-        <NumberStepper
-          value={state.settings.proteinFloor}
-          onChange={(v) => state.updateSettings({ proteinFloor: Math.round(v) })}
-          step={5}
-          min={50}
-          max={400}
-          decimals={0}
-          suffix="g"
-        />
-        <Text style={font.tiny}>
-          Kalori düşerken protein bu değerin altına inerse tavuk gramajı otomatik artırılır.
-        </Text>
 
         <Text style={[font.tiny, { marginTop: spacing.sm }]}>
           Kalori her gün sabittir; dinlenme gününde de plan aynen uygulanır.

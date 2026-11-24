@@ -16,7 +16,7 @@ import {
   Section,
   StatTile,
 } from '../components/ui';
-import { GROUP_NAMES } from '../data/program';
+import { GROUP_NAMES, getProgram } from '../data/program';
 import { formatRelative, formatShort, todayKey } from '../logic/date';
 import { eatenMacros } from '../logic/nutrition';
 import { sessionVolume, weekStart, weeklyVolume } from '../logic/progression';
@@ -212,14 +212,9 @@ export const StatsScreen = ({ go }: { go: (tab: TabKey) => void }) => {
       <Section>
         <Text style={font.h3}>Ayarlar ve yedek</Text>
         <View>
-          <DataRow label="Program" value={state.programId === 'kalca' ? 'Kalça ağırlıklı' : 'Hipertrofi PPL'} strong />
+          <DataRow label="Program" value={getProgram(state.programId).name} strong />
           <DataRow label="Dinlenme sayacı" value={`${state.settings.restSeconds} sn`} strong />
           <DataRow label="Günlük kalori hedefi" value={`${state.calorieTarget} kcal`} strong />
-          <DataRow
-            label="Protein tabanı"
-            value={`${state.settings.proteinFloor} g · asla altına inmez`}
-            strong
-          />
           <DataRow label="Veri" value="Cihazda kalıcı · offline" strong />
         </View>
         <Button title="Ayarları aç →" variant="ghost" onPress={() => go('settings')} />

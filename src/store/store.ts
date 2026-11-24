@@ -18,7 +18,6 @@ import {
   buildDayMeals,
   diffPlans,
   distributeCarbs,
-  enforceProteinFloor,
   kcalToCarbGrams,
   planMacros,
 } from '../logic/nutrition';
@@ -44,7 +43,6 @@ const DEFAULT_SETTINGS: Settings = {
   restSeconds: 120,
   compoundIncrement: 2.5,
   isolationIncrement: 1.25,
-  proteinFloor: 160,
   autoAdjustEnabled: true,
   reminders: {
     weigh: { enabled: true, time: '09:00' },
@@ -580,11 +578,7 @@ export const useStore = create<Store>()(
           const delta = s.calorieTarget - current;
           if (Math.abs(delta) < 40) return s;
           const grams = kcalToCarbGrams(delta, s.foods);
-          const next = enforceProteinFloor(
-            distributeCarbs(s.plan, grams),
-            s.foods,
-            s.settings.proteinFloor
-          );
+          const next = distributeCarbs(s.plan, grams);
           return { plan: next, dayLogs: syncTodayWithPlan(s.dayLogs, next) };
         }),
 
@@ -651,11 +645,7 @@ export const useStore = create<Store>()(
         const nextPlan =
           grams === 0
             ? s.plan
-            : enforceProteinFloor(
-                distributeCarbs(s.plan, grams),
-                s.foods,
-                s.settings.proteinFloor
-              );
+            : distributeCarbs(s.plan, grams);
         const diffs = diffPlans(s.plan, nextPlan);
         const toKcal = s.calorieTarget + decision.kcalDelta;
 
@@ -834,7 +824,7 @@ export const useStore = create<Store>()(
           state = {
             ...state,
             plan: base.plan,
-            settings: { ...base.settings, ...(state.settings ?? {}), proteinFloor: base.settings.proteinFloor },
+            settings: { ...base.settings, ...(state.settings ?? {}) },
             calorieTarget: base.calorieTarget,
             macroTargets: base.macroTargets,
             // Kullanıcının düzenlediği/eklediği besinler korunur; gainer ve

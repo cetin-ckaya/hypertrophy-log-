@@ -163,7 +163,7 @@ değişmez. Uyguladıktan sonra aşağıdaki haftalık otomatik ayar bu başlang
   | > 0,5 kg | −150 kcal |
 
 - Kalori değişimi **karbonhidrattan** (pirinç) yapılır, Öğün 2 ve Öğün 3'e eşit dağıtılır;
-  protein 160 g'ın altına düşerse tavuk gramajı otomatik artırılır.
+  tavuk gramajına dokunulmaz.
 - Öneri bir **kart olarak gösterilir; onaylayana kadar hiçbir şey değişmez.**
   Onaylarsan hedef ve gramajlar güncellenir, reddedersen kayıt geçmişte kalır.
 
@@ -212,7 +212,7 @@ Tabağı pişmiş tartıyorsan veritabanındaki "Tavuk göğsü (pişmiş)" ve
 Gramajlar Beslenme → "Plan" sekmesinden değiştirilebilir; hedef kalori de
 Ayarlar'dan ayarlanır. Plan ile hedef arasında 40 kcal'dan fazla fark oluşursa
 Beslenme ekranında uyarı kartı ve tek dokunuşluk **"Planı dengele"** düğmesi çıkar:
-fark karbonhidrattan (pirinç) kapatılır, protein tabanı korunur.
+fark karbonhidrattan (pirinç) kapatılır.
 
 ## Teknoloji
 

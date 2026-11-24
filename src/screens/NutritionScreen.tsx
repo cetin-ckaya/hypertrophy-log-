@@ -81,8 +81,7 @@ export const NutritionScreen = () => {
                 </Text>
                 <Button title="Planı dengele" onPress={state.matchPlanToTarget} />
                 <Text style={font.tiny}>
-                  Fark karbonhidrattan (pirinç) kapatılır; protein {state.settings.proteinFloor} g'ın
-                  altına düşmez.
+                  Fark karbonhidrattan (pirinç) kapatılır.
                 </Text>
             </Card>
           ) : null}

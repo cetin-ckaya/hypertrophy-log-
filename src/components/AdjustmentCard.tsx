@@ -11,7 +11,6 @@ export const AdjustmentCard = () => {
   const adj = useStore((s) => s.pendingAdjustment);
   const apply = useStore((s) => s.applyAdjustment);
   const reject = useStore((s) => s.rejectAdjustment);
-  const proteinFloor = useStore((s) => s.settings.proteinFloor);
   if (!adj) return null;
 
   return (
@@ -37,7 +36,6 @@ export const AdjustmentCard = () => {
             strong
           />
         ))}
-        <DataRow label="Protein" value={`${proteinFloor} g · sabit`} strong />
       </View>
 
       <Row gap={spacing.sm}>
