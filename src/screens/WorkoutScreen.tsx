@@ -465,6 +465,23 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
                         </Text>
                       </Row>
                     ))}
+                    <Pressable
+                      style={[styles.mini, { marginTop: spacing.sm, borderColor: colors.accent, flex: 0 }]}
+                      accessibilityRole="button"
+                      accessibilityLabel="Bu seansı sil"
+                      onPress={() =>
+                        confirm(
+                          'Seansı sil',
+                          `${dayById(s.dayId)?.name ?? s.dayId} · ${formatShort(s.date)} kaydı silinecek. Bu geri alınamaz.`,
+                          () => {
+                            state.deleteSession(s.id);
+                            setOpenSession(null);
+                          }
+                        )
+                      }
+                    >
+                      <Text style={[styles.miniText, { color: colors.accentDeep }]}>Bu seansı sil</Text>
+                    </Pressable>
                   </View>
                 ) : null}
               </View>
