@@ -49,6 +49,7 @@ import {
 import { useStore } from '../store/store';
 import { colors, font, fonts, rules, spacing } from '../theme';
 import { TabKey } from '../navigation';
+import { WorkoutSession } from '../types';
 
 const confirm = (title: string, message: string, onOk: () => void) => {
   if (Platform.OS === 'web') {
@@ -71,6 +72,8 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
   const [sub, setSub] = useState<Sub>('session');
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   const [openSession, setOpenSession] = useState<string | null>(null);
+  /** Son silinen seans — "Geri al" için. */
+  const [deleted, setDeleted] = useState<WorkoutSession | null>(null);
 
   const startRest = () => {
     // Dokunuş anında ses kilidini aç; sayaç bitince bip çalabilsin (iOS).
@@ -424,6 +427,28 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
         )
       ) : null}
 
+      {sub === 'history' && deleted ? (
+        <View style={styles.undo}>
+          <Text style={[font.small, { flex: 1, color: colors.ink }]}>
+            {dayById(deleted.dayId)?.name ?? deleted.dayId} · {formatShort(deleted.date)} silindi.
+          </Text>
+          <Pressable
+            onPress={() => {
+              state.restoreSession(deleted);
+              setDeleted(null);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Silinen seansı geri al"
+            hitSlop={8}
+          >
+            <Text style={[styles.miniText, { color: colors.accentDeep }]}>Geri al</Text>
+          </Pressable>
+          <Pressable onPress={() => setDeleted(null)} hitSlop={8} accessibilityLabel="Kapat">
+            <Text style={[styles.miniText, { color: colors.muted }]}>✕</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
       {sub === 'history' ? (
         state.sessions.length === 0 ? (
           <Section strong={false} style={{ borderTopWidth: 0 }}>
@@ -472,9 +497,10 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
                       onPress={() =>
                         confirm(
                           'Seansı sil',
-                          `${dayById(s.dayId)?.name ?? s.dayId} · ${formatShort(s.date)} kaydı silinecek. Bu geri alınamaz.`,
+                          `${dayById(s.dayId)?.name ?? s.dayId} · ${formatShort(s.date)} kaydı silinecek. Hemen ardından çıkan "Geri al" ile geri getirebilirsin.`,
                           () => {
                             state.deleteSession(s.id);
+                            setDeleted(s);
                             setOpenSession(null);
                           }
                         )
@@ -590,6 +616,17 @@ const styles = StyleSheet.create({
     letterSpacing: 1.1,
     textTransform: 'uppercase',
     color: colors.ink,
+  },
+  undo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: colors.accentTint,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.accent,
   },
   historyDetail: {
     gap: 6,

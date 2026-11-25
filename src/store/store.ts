@@ -127,6 +127,8 @@ type Actions = {
   extendRest: (seconds: number) => void;
   stopRest: () => void;
   deleteSession: (id: string) => void;
+  /** Silinen seansı geri koyar (tarih sırasına göre). */
+  restoreSession: (session: WorkoutSession) => void;
 
   // Beslenme
   ensureDay: (date: string) => void;
@@ -415,6 +417,14 @@ export const useStore = create<Store>()(
       stopRest: () => set({ restEndsAt: null }),
 
       deleteSession: (id) => set((s) => ({ sessions: s.sessions.filter((x) => x.id !== id) })),
+
+      restoreSession: (session) =>
+        set((s) => {
+          if (s.sessions.some((x) => x.id === session.id)) return s;
+          const key = (x: WorkoutSession) => x.completedAt ?? x.startedAt;
+          const sessions = [...s.sessions, session].sort((a, b) => key(a) - key(b));
+          return { sessions };
+        }),
 
       // ---------- Beslenme ----------
       ensureDay: (date) =>
