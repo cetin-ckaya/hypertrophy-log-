@@ -65,6 +65,12 @@ const confirm = (title: string, message: string, onOk: () => void) => {
 
 type Sub = 'session' | 'history' | 'pr';
 
+/** "Geçen sefer" kaydının ne zaman (ve farklı günse hangi günde) yapıldığı: "19 Kas · Torso B". */
+const whenLabel = (prev: { session: { date: string; dayId: string } }, currentDayId: string) =>
+  prev.session.dayId === currentDayId
+    ? formatShort(prev.session.date)
+    : `${formatShort(prev.session.date)} · ${dayById(prev.session.dayId)?.name ?? prev.session.dayId}`;
+
 export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
   const state = useStore();
   const program = getProgram(state.programId);
@@ -185,7 +191,7 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
                   <View style={styles.noteRow}>
                     <View style={styles.note}>
                       <Text style={font.small}>
-                        Geçen sefer:{' '}
+                        Geçen sefer{previous ? ` (${whenLabel(previous, active.dayId)})` : ''}:{' '}
                         <Text style={[font.bodyStrong, font.num, { fontSize: 13 }]}>
                           {previous ? formatSetsShort(previous.exercise.sets) : 'kayıt yok'}
                         </Text>
@@ -399,7 +405,9 @@ export const WorkoutScreen = ({ go }: { go: (tab: TabKey) => void }) => {
                       </Row>
                       <Row gap={spacing.sm} style={{ marginTop: 2, flexWrap: 'wrap' }}>
                         <Text style={[font.small, font.num, { color: colors.muted }]}>
-                          {previous ? formatSetsShort(previous.exercise.sets) : 'Kayıt yok'}
+                          {previous
+                            ? `${formatSetsShort(previous.exercise.sets)} — ${whenLabel(previous, nextDay.id)}`
+                            : 'Kayıt yok'}
                         </Text>
                         {flag ? <Text style={styles.previewFlag}>{flag}</Text> : null}
                       </Row>
